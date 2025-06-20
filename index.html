@@ -64,9 +64,21 @@
 			.logEntry .logMsg.error {color:#ff5c77;}
 			.logEntry .logMsg.warn {color:#ffb854;}
 			.logEntry .logMsg {margin:0.13em 0;}
-			.copyLogBtn, .downloadLogBtn { margin-right: 1em; background:#3e5799;}
-			#diffPanel {background:#182330; color:#b1f1fc; font-family:monospace; padding:1em; font-size:13px; border-radius:7px; border:1px solid #193753; margin:1em;}
-		</style>
+                        .copyLogBtn, .downloadLogBtn { margin-right: 1em; background:#3e5799;}
+                        #diffPanel {background:#182330; color:#b1f1fc; font-family:monospace; padding:1em; font-size:13px; border-radius:7px; border:1px solid #193753; margin:1em;}
+                        #spinnerOverlay {
+                                position: fixed; top:0; left:0; right:0; bottom:0;
+                                background: rgba(0,0,0,0.4); display:none;
+                                align-items:center; justify-content:center;
+                                z-index:2000;
+                        }
+                        #spinnerOverlay .spinner {
+                                border:6px solid #ddd; border-top:6px solid #1181e4;
+                                border-radius:50%; width:50px; height:50px;
+                                animation: spin 1s linear infinite;
+                        }
+                        @keyframes spin { from{transform:rotate(0deg);} to{transform:rotate(360deg);} }
+                </style>
 		<script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 	</head>
 	<body>
@@ -114,8 +126,9 @@
                 <div id="screenshotModal" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:#000a; align-items:center; justify-content:center; z-index:1000;">
                         <img style="max-width:90vw; max-height:90vh; border:2px solid #aaa; border-radius:6px;" />
                 </div>
+                <div id="spinnerOverlay"><div class="spinner"></div></div>
                 <div id="settingsPanel">
-			<div class="row" style="justify-content:space-between;">
+                        <div class="row" style="justify-content:space-between;">
 				<b style="font-size:1.14em;">⚙️ Settings</b>
 				<button class="closeBtn">Close</button>
 			</div>
@@ -162,8 +175,10 @@
                         const screenshotPreview = document.getElementById('screenshotPreview');
                         const screenshotImg = screenshotPreview.querySelector('img');
                         const screenshotModal = document.getElementById('screenshotModal');
-                        const screenshotModalImg = screenshotModal.querySelector('img');
-                        const dividers = document.querySelectorAll('.divider');
+const screenshotModalImg = screenshotModal.querySelector('img');
+const spinnerOverlay = document.getElementById('spinnerOverlay');
+const dividers = document.querySelectorAll('.divider');
+function showSpinner(show){ spinnerOverlay.style.display = show ? 'flex' : 'none'; }
                         dividers.forEach(d=>{
                                 d.addEventListener('mousedown', e=>initDrag(e, d));
                         });
@@ -523,55 +538,61 @@
 				}
 				return diff.join('\n');
 			}
-			async function callAgent(apiKey, agent, input1, input2){
-				let prompt = agentPrompt(agent, input1, input2);
-				if(logDetailInput.checked) log(agent, "Prompt:", prompt);
-				let res = await fetch("https://api.openai.com/v1/chat/completions",{
-					method:"POST",
-					headers:{"Authorization":`Bearer ${apiKey}`,"Content-Type":"application/json"},
-					body: JSON.stringify({
-						model:"gpt-4.1-nano",
-						messages:[
+                        async function callAgent(apiKey, agent, input1, input2){
+                                let prompt = agentPrompt(agent, input1, input2);
+                                if(logDetailInput.checked) log(agent, "Prompt:", prompt);
+                                showSpinner(true);
+                                try {
+                                let res = await fetch("https://api.openai.com/v1/chat/completions",{
+                                        method:"POST",
+                                        headers:{"Authorization":`Bearer ${apiKey}`,"Content-Type":"application/json"},
+                                        body: JSON.stringify({
+                                                model:"gpt-4.1-nano",
+                                                messages:[
 							{role:"system", content:`You are the "${agent}" AI agent for web UI development. Be concise and act as instructed.`},
 							{role:"user", content: prompt}
 						],
 						temperature: agent==="Generate"?0.3:0.55, max_tokens: 6666
 					})
 				});
-				let data = await res.json();
-				if (!res.ok || !data.choices || !data.choices[0]) {
-					let errMsg = data.error?.message || "OpenAI API Error";
-					log(agent, `ERROR: ${errMsg}`, null, {error:true});
-					statusBar.textContent = `Error from OpenAI: ${errMsg}`;
-					throw new Error(errMsg);
-				}
-				let aiContent = data.choices[0].message.content.trim();
-				aiContent = stripCodeFences(aiContent);
-				if(logDetailInput.checked) log(agent, "AI Response:", aiContent);
-				return aiContent;
-			}
+                                let data = await res.json();
+                                if (!res.ok || !data.choices || !data.choices[0]) {
+                                        let errMsg = data.error?.message || "OpenAI API Error";
+                                        log(agent, `ERROR: ${errMsg}`, null, {error:true});
+                                        statusBar.textContent = `Error from OpenAI: ${errMsg}`;
+                                        throw new Error(errMsg);
+                                }
+                                let aiContent = data.choices[0].message.content.trim();
+                                aiContent = stripCodeFences(aiContent);
+                                if(logDetailInput.checked) log(agent, "AI Response:", aiContent);
+                                return aiContent;
+                                } finally { showSpinner(false); }
+                        }
 			// ----------- VISUAL AGENT -----------
-			async function callVisualAgent(apiKey, agent, code, errors, base64Image){
-				if(!base64Image)return{status:"No screenshot",message:"No screenshot",code};
-				let messages=[
-					{role:"system", content:"You are the Visual Debug AI agent. Analyze the provided web page screenshot, errors, and HTML code. Suggest or directly fix visual bugs. If all is good and the goal is clearly met, respond with {\"status\":\"done\"}."},
-					{role:"user", content:[
-						{type:"image_url", image_url:{url:base64Image}},
-						{type:"text", text:`Goal: ${goalInput.value}\nErrors: ${errors||"None"}\n\nCode:\n${code}`}
-					]}
-				];
-				let body = {model:"gpt-4.1-nano", messages, temperature:0.55, max_tokens: 6666};
-				let res = await fetch("https://api.openai.com/v1/chat/completions",{method:"POST",headers:{"Authorization":`Bearer ${apiKey}`,"Content-Type":"application/json"},body:JSON.stringify(body)});
-				let data = await res.json();
-				let reply = data.choices?.[0]?.message?.content?.trim()||"";
-				reply = stripCodeFences(reply);
-				if(logDetailInput.checked) log(agent, "AI Visual Response:", reply);
-				try {
-					let m = reply.match(/\{[\s\S]+\}/);
-					if(m) return JSON.parse(m[0]);
-				} catch{}
-				return {status:"", message:reply, code};
-			}
+                        async function callVisualAgent(apiKey, agent, code, errors, base64Image){
+                                if(!base64Image)return{status:"No screenshot",message:"No screenshot",code};
+                                showSpinner(true);
+                                try{
+                                let messages=[
+                                        {role:"system", content:"You are the Visual Debug AI agent. Analyze the provided web page screenshot, errors, and HTML code. Suggest or directly fix visual bugs. If all is good and the goal is clearly met, respond with {\"status\":\"done\"}."},
+                                        {role:"user", content:[
+                                                {type:"image_url", image_url:{url:base64Image}},
+                                                {type:"text", text:`Goal: ${goalInput.value}\nErrors: ${errors||"None"}\n\nCode:\n${code}`}
+                                        ]}
+                                ];
+                                let body = {model:"gpt-4.1-nano", messages, temperature:0.55, max_tokens: 6666};
+                                let res = await fetch("https://api.openai.com/v1/chat/completions",{method:"POST",headers:{"Authorization":`Bearer ${apiKey}`,"Content-Type":"application/json"},body:JSON.stringify(body)});
+                                let data = await res.json();
+                                let reply = data.choices?.[0]?.message?.content?.trim()||"";
+                                reply = stripCodeFences(reply);
+                                if(logDetailInput.checked) log(agent, "AI Visual Response:", reply);
+                                try {
+                                        let m = reply.match(/\{[\s\S]+\}/);
+                                        if(m) return JSON.parse(m[0]);
+                                } catch{}
+                                return {status:"", message:reply, code};
+                                } finally { showSpinner(false); }
+                        }
 			function stripCodeFences(aiText) {
 				return aiText.replace(/^\s*```html\s*/i, '')
 				.replace(/^\s*```\s*/i, '')
