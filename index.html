@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width,initial-scale=1" />
+		<title>Auto Multi-Agent AI Web Code Generator (Visual Debug, Log)</title>
+		<style>
+			body { margin:0; font-family: 'Segoe UI', Arial, sans-serif; background: #171b20; color: #f0f0f5; height: 100vh; display: flex; flex-direction: column;}
+			header { background: #212630; padding: 1.1rem 1.5rem; display: flex; align-items: center; gap: 1rem; }
+			header input[type="password"], header input[type="text"] { font-size: 1rem; padding: 0.5rem; border-radius: 7px; border: 1px solid #444; background: #181b20; color: #e9e9e9; }
+			#goalInput { flex:1; }
+			button { background: #1181e4; color: #fff; border:none; border-radius: 7px; padding: 0.6rem 1.2rem; font-size: 1rem; cursor:pointer; transition:background 0.2s;}
+			button:disabled { background: #555; cursor: not-allowed;}
+			main { flex:1; display:flex; min-height:0;}
+			#editorContainer, #previewContainer, #logContainer { flex:1; display:flex; flex-direction:column;}
+			#editorContainer { max-width: 40vw; min-width: 380px; }
+			#previewContainer { min-width: 320px; border-left: 1px solid #232630; border-right: 1px solid #232630; }
+			#logContainer { max-width: 33vw; min-width: 350px; background: #181b20;}
+			#codeEditor { flex:1; width:100%; font-family:'JetBrains Mono',monospace; font-size:15px; background: #16191c; color:#e9e9e9; border:none; outline:none; padding:1rem;}
+			#previewFrame { flex:1; width:100%; border:none; background:#fff; }
+			#debugLog { flex:1; width:100%; background:#191b20; color:#b9e8ff; font-size:13px; font-family:monospace; border:none; padding:1rem; resize:none; white-space: pre-line; overflow:auto;}
+			#logHeader { padding: 0.6rem 1rem 0.3rem 1rem; font-weight: bold; letter-spacing:1px; background:#22262c; }
+			#editorLabel, #previewLabel { padding:0.6rem 1rem 0.3rem 1rem; font-weight:bold; letter-spacing:1px; background:#22262c;}
+			#statusBar { background:#23272e; color:#6bd7ff; font-size:1rem; padding:0.5rem 1.1rem; border-top:1px solid #181b20; min-height:24px; }
+			@media (max-width:1050px){ main{flex-direction:column;} #editorContainer,#previewContainer,#logContainer{max-width:100%;min-width:0;}}
+		</style>
+		<script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+	</head>
+	<body>
+		<header>
+			<b style="font-size:1.12rem;">Auto-AI Web Agent</b>
+			<input id="apiKey" type="password" placeholder="OpenAI API key" autocomplete="off" style="min-width:210px;" />
+			<input id="goalInput" type="text" placeholder="Describe your goal (e.g. responsive gallery with dark mode, contact form...)" />
+			<button id="runAI">Start Auto</button>
+			<button id="stopAI" style="background:#ad2331;display:none;">Stop</button>
+		</header>
+		<main>
+			<div id="editorContainer">
+				<div id="editorLabel">Current HTML Code</div>
+				<textarea id="codeEditor" spellcheck="false" autocomplete="off"></textarea>
+			</div>
+			<div id="previewContainer">
+				<div id="previewLabel">Live Preview</div>
+				<iframe id="previewFrame" sandbox="allow-scripts allow-same-origin"></iframe>
+			</div>
+			<div id="logContainer">
+				<div id="logHeader">AI Debug Log</div>
+				<textarea id="debugLog" readonly></textarea>
+			</div>
+		</main>
+		<div id="statusBar">Ready.</div>
+		<script>
+			const editor = document.getElementById('codeEditor');
+			const preview = document.getElementById('previewFrame');
+			const runAI = document.getElementById('runAI');
+			const stopAI = document.getElementById('stopAI');
+			const statusBar = document.getElementById('statusBar');
+			const goalInput = document.getElementById('goalInput');
+			const debugLog = document.getElementById('debugLog');
+			const apiKeyInput = document.getElementById('apiKey');
+			let stopped = false, running = false;
+			
+			// Save/load API key (session, not persistent)
+			apiKeyInput.value = window.sessionStorage.getItem('OPENAI_API_KEY') || '';
+			apiKeyInput.addEventListener('input', () => {
+				window.sessionStorage.setItem('OPENAI_API_KEY', apiKeyInput.value);
+			});
+			
+			// Update preview when code changes
+			function updatePreview(html){ preview.srcdoc=html; }
+			editor.addEventListener('input', ()=>updatePreview(editor.value));
+			
+			// Log helper
+			function log(step, msg, obj){
+				debugLog.value += `[${step}] ${msg}\n` + (obj? (typeof obj=="string"?obj:JSON.stringify(obj,null,2))+"\n":"");
+				debugLog.scrollTop=debugLog.scrollHeight;
+			}
+			
+			// Initial HTML
+			editor.value = `<!DOCTYPE html>
+			<html lang="en">
+				<head>
+					<meta charset="UTF-8" />
+					<title>My Web Project</title>
+					<meta name="viewport" content="width=device-width, initial-scale=1" />
+					<style>
+						body { font-family: Arial, sans-serif; background: #f5f7fa; color: #222; margin: 0; padding: 2rem;}
+						h1 { color: #18a; }
+					</style>
+				</head>
+				<body>
+					<h1>Hello world!</h1>
+					<p>Type a goal above and run auto. The AI will keep improving this page until your goal is met!</p>
+				</body>
+			</html>`;
+			updatePreview(editor.value);
+			
+			// ---- MULTI-AGENT PIPELINE ----
+			runAI.onclick = async function(){
+				stopped = false; running = true;
+				runAI.disabled = true; stopAI.style.display = '';
+				statusBar.textContent = "Pipeline starting...";
+				debugLog.value = '';
+				let apiKey = apiKeyInput.value.trim();
+				if (!apiKey || !apiKey.startsWith('sk-')) {
+					alert("Please enter a valid OpenAI API key.");
+					apiKeyInput.focus(); runAI.disabled = false; stopAI.style.display = 'none';
+					return;
+				}
+				let userGoal = goalInput.value.trim();
+				if (!userGoal) {
+					alert("Please describe your goal!");
+					goalInput.focus(); runAI.disabled = false; stopAI.style.display = 'none';
+					return;
+				}
+				
+				let code = editor.value, iteration = 0, maxIterations = 30, done = false, lastVisual = "";
+				// AGENT: Understand user intent
+				statusBar.textContent = "1/7: Understanding goal...";
+				let intent = await callAgent(apiKey, "Understand", userGoal);
+				log("Understand", "Intent: "+intent);
+				
+				// AGENT: Plan UI/components
+				statusBar.textContent = "2/7: Planning UI...";
+				let plan = await callAgent(apiKey, "Plan", intent);
+				log("Plan", "UI Plan:\n"+plan);
+				
+				while (!done && iteration < maxIterations && !stopped) {
+					iteration++;
+					statusBar.textContent = `Iter ${iteration}: Generating code...`;
+					
+					let prevCode = code;
+					code = await callAgent(apiKey, "Generate", plan, code);
+					log("Diff", simpleDiff(prevCode, code));
+					log("Generate", "Code generated.");
+					editor.value = code; updatePreview(code);
+					
+					// AGENT: Debug (text)
+					statusBar.textContent = `Iter ${iteration}: Debugging...`;
+					let errors = await captureIframeConsoleErrors();
+					log("Debug", errors?("Errors:\n"+errors):"No runtime errors found.");
+					let debugged = await callAgent(apiKey, "Debug", code, errors);
+					code = debugged; editor.value = code; updatePreview(code);
+					
+					// AGENT: Visual Debug
+					statusBar.textContent = `Iter ${iteration}: Visual Debug...`;
+					let screenshot = await captureIframeScreenshot();
+					let visual = await callVisualAgent(apiKey, "Visual Debug", code, errors, screenshot);
+					log("VisualDebug", "Visual check: "+(visual.status||visual.message||"-"));
+					if (visual.code && visual.code.toLowerCase().includes("<html"))
+					code = visual.code;
+					editor.value = code; updatePreview(code);
+					
+					// AGENT: Reflect/Check Goal
+					statusBar.textContent = `Iter ${iteration}: Reflecting on goal...`;
+					let reflection = await callAgent(apiKey, "Reflect", goalInput.value, code);
+					log("Reflect", reflection);
+					if ((reflection||"").toLowerCase().includes("yes") || (visual.status||"").toLowerCase().includes("done")) {
+						done = true;
+						log("DONE", "Goal confirmed by reflect agent.");
+						statusBar.textContent = `Goal achieved (confirmed) in ${iteration} iterations!`;
+						break;
+					}
+					
+					// Stopping criteria: visual agent says "done" or code looks good
+					if ((visual.status||"").toLowerCase().includes("done") || (visual.message||"").toLowerCase().includes("goal achieved")) {
+						done = true; log("DONE", "Goal achieved by visual agent.");
+						statusBar.textContent = `Goal achieved in ${iteration} iterations!`;
+						break;
+					}
+					// AGENT: Improve code
+					statusBar.textContent = `Iter ${iteration}: Improving...`;
+					code = await callAgent(apiKey, "Improve", code);
+					log("Improve", "Improved.");
+					editor.value = code; updatePreview(code);
+					
+					await sleep(600); // Prevent API spam, allow UI to update
+				}
+				// AGENT: Finalize code
+				statusBar.textContent = "Finalizing...";
+				code = await callAgent(apiKey, "Finalize", code);
+				editor.value = code; updatePreview(code);
+				log("Finalize", "Final HTML produced.");
+				statusBar.textContent = done ? "Auto-run complete! Goal achieved." : "Stopped or max iterations reached.";
+				runAI.disabled = false; stopAI.style.display = 'none'; running = false;
+			};
+			
+			stopAI.onclick = ()=>{ stopped=true; statusBar.textContent="Stopped by user."; stopAI.style.display='none'; runAI.disabled=false; };
+			
+			function sleep(ms){ return new Promise(r=>setTimeout(r,ms)); }
+			
+			// --------- AGENTS (PROMPT TEMPLATES) ----------
+			function agentPrompt(agent, input1, input2){
+				switch(agent){
+					case "Reflect":
+					return `Given this user goal: "${input1}"\nAnd this HTML code:\n${input2}\nIn 1 sentence: Does this code fulfill the user goal? Answer YES or NO, then a short reason.`;
+					
+					case "Understand":
+					return `Summarize this web project goal in 1-2 sentences, extract intent and any requirements:\n"${input1}"`;
+					case "Plan":
+					return `Based on this user intent:\n"${input1}"\nList needed UI components, data flows, and features (bulleted).`;
+					case "Generate":
+					return `Generate a valid, standalone HTML file (with inline CSS/JS) implementing this UI plan:\n${input1}\n\nIf prior code exists, improve or merge with:\n${input2||"(none)"}\nOnly output full HTML, no explanations.`;
+					case "Debug":
+					return `Review this HTML/CSS/JS code:\n${input1}\nDetected runtime errors:\n${input2||"None"}\nFix all issues. Output only corrected code.`;
+					case "Improve":
+					return `Optimize this HTML/CSS/JS for readability, speed, accessibility, responsiveness:\n${input1}\nOutput only the improved HTML.`;
+					case "Finalize":
+					return `Clean up and finalize this HTML code for production, with best practices and comments:\n${input1}\nOutput only the final code.`;
+					default: return input1||"";
+				}
+			}
+			
+			function simpleDiff(before, after) {
+				if (before === after) return "";
+				let b = before.split('\n'), a = after.split('\n');
+				let diff = [];
+				for (let i = 0; i < Math.max(b.length, a.length); i++) {
+					if (b[i] !== a[i]) diff.push(`- ${b[i]||""}\n+ ${a[i]||""}`);
+				}
+				return diff.join('\n');
+			}
+			
+			async function callAgent(apiKey, agent, input1, input2){
+				let prompt = agentPrompt(agent, input1, input2);
+				log(agent, "Prompt:\n"+prompt);
+				let res = await fetch("https://api.openai.com/v1/chat/completions",{
+					method:"POST",
+					headers:{"Authorization":`Bearer ${apiKey}`,"Content-Type":"application/json"},
+					body: JSON.stringify({
+						model:"gpt-4.1-nano",
+						messages:[
+							{role:"system", content:`You are the "${agent}" AI agent for web UI development. Be concise and act as instructed.`},
+							{role:"user", content: prompt}
+						],
+						temperature: agent==="Generate"?0.3:0.15, max_tokens: 2000
+					})
+				});
+				let data = await res.json();
+				if (!res.ok || !data.choices || !data.choices[0]) {
+					let errMsg = data.error?.message || "OpenAI API Error";
+					log(agent, `ERROR: ${errMsg}`);
+					statusBar.textContent = `Error from OpenAI: ${errMsg}`;
+					throw new Error(errMsg);
+				}
+				let aiContent = data.choices[0].message.content.trim();
+				aiContent = stripCodeFences(aiContent); // <-- STRIP FENCES HERE
+				log(agent, "AI Response: "+ (aiContent.substring(0,380)||""));
+				return aiContent;
+			}
+			
+			
+			
+			
+			// ----------- VISUAL AGENT -----------
+			async function callVisualAgent(apiKey, agent, code, errors, base64Image){
+				if(!base64Image)return{status:"No screenshot",message:"No screenshot",code};
+				let messages=[
+					{role:"system", content:"You are the Visual Debug AI agent. Analyze the provided web page screenshot, errors, and HTML code. Suggest or directly fix visual bugs. If all is good and the goal is clearly met, respond with {\"status\":\"done\"}."},
+					{role:"user", content:[
+						{type:"image_url", image_url:{url:base64Image}},
+						{type:"text", text:`Goal: ${goalInput.value}\nErrors: ${errors||"None"}\n\nCode:\n${code}`}
+					]}
+				];
+				let body = {model:"gpt-4.1-nano", messages, temperature:0.15, max_tokens: 2000};
+				let res = await fetch("https://api.openai.com/v1/chat/completions",{method:"POST",headers:{"Authorization":`Bearer ${apiKey}`,"Content-Type":"application/json"},body:JSON.stringify(body)});
+				let data = await res.json();
+				let reply = data.choices?.[0]?.message?.content?.trim()||"";
+				reply = stripCodeFences(reply); // << handle just in case
+				log(agent, "AI Visual Response: "+reply.substring(0,400));
+				try {
+					// Try parse status/code if provided in JSON
+					let m = reply.match(/\{[\s\S]+\}/); // Try extract { ... }
+					if(m) return JSON.parse(m[0]);
+				} catch{}
+				return {status:"", message:reply, code};
+			}
+			
+			function stripCodeFences(aiText) {
+				// Removes ```html ... ``` or ``` ... ``` code fences if present
+				return aiText.replace(/^\s*```html\s*/i, '')
+				.replace(/^\s*```\s*/i, '')
+				.replace(/```$/g, '')
+				.trim();
+			}
+			// --- Capture iframe JS errors (runtime) ---
+			function captureIframeConsoleErrors(){
+				return new Promise(resolve=>{
+					let iframeWindow = preview.contentWindow, errors=[];
+					if(!iframeWindow){ resolve(""); return;}
+					function onError(event){ errors.push(event.message+` (line ${event.lineno})`);}
+					iframeWindow.onerror = onError;
+					setTimeout(()=>{
+						iframeWindow.onerror=null;
+						resolve(errors.join('\n'));
+					}, 800);
+				});
+			}
+			
+			// --- Screenshot as base64 png ---
+			async function captureIframeScreenshot(){
+				let doc=preview.contentDocument;
+				if(!doc)return null;
+				try{
+					let canvas=await html2canvas(doc.body);
+					return canvas.toDataURL("image/png");
+				}catch(e){ log("Screenshot","Failed: "+e);}
+				return null;
+			}
+		</script>
+	</body>
+</html>
