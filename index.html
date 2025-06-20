@@ -54,8 +54,10 @@
 			#editorLabel, #previewLabel { padding:0.6rem 1rem 0.3rem 1rem; font-weight:bold; letter-spacing:1px; background:#22262c;}
 			#statusBar { background:#23272e; color:#6bd7ff; font-size:1rem; padding:0.5rem 1.1rem; border-top:1px solid #181b20; min-height:24px; }
 			#editorControls { display:flex; gap:1em; align-items:center; padding: 0.6em 1em; background:#23262c;}
-			#editorControls button { background:#25477c; font-size:0.98em; padding:0.45em 1.15em;}
-			@media (max-width:1050px){ main{flex-direction:column;} #editorContainer,#previewContainer,#logContainer{max-width:100%;min-width:0;}}
+                        #editorControls button { background:#25477c; font-size:0.98em; padding:0.45em 1.15em;}
+                        .divider { width:5px; background:#444; cursor:col-resize; }
+                        body.dragging { user-select:none; }
+                        @media (max-width:1050px){ main{flex-direction:column;} #editorContainer,#previewContainer,#logContainer{max-width:100%;min-width:0;} .divider{display:none;}}
 			.logEntry {margin-bottom:1.3em; border-bottom:1px solid #2226; padding-bottom:0.7em;}
 			.logEntry .stepName {color:#ffdf88; font-weight:600;}
 			.logEntry .juniorTip {color:#57eaff; font-size:0.98em; margin:0.22em 0 0.7em 0;}
@@ -79,7 +81,7 @@
                 <div id="stepper"></div>
                 <div id="progressContainer"><div id="progressBar"></div></div>
                 <main>
-			<div id="editorContainer">
+                        <div id="editorContainer">
 				<div id="editorControls">
 					<button id="copyHtmlBtn">Copy HTML</button>
 					<button id="downloadHtmlBtn">Download HTML</button>
@@ -88,11 +90,13 @@
 				<div id="editorLabel">Current HTML Code</div>
 				<textarea id="codeEditor" spellcheck="false" autocomplete="off"></textarea>
 				<div id="diffPanel" style="display:none;"></div>
-			</div>
-			<div id="previewContainer">
+                        </div>
+                        <div class="divider"></div>
+                        <div id="previewContainer">
 				<div id="previewLabel">Live Preview</div>
 				<iframe id="previewFrame" sandbox="allow-scripts allow-same-origin"></iframe>
-			</div>
+                        </div>
+                        <div class="divider"></div>
                                 <div id="logContainer">
                                         <div id="logHeader" style="display:flex; align-items:center;">
                                                 <span style="flex:1;">AI Debug Log</span>
@@ -156,6 +160,31 @@
                         const screenshotImg = screenshotPreview.querySelector('img');
                         const screenshotModal = document.getElementById('screenshotModal');
                         const screenshotModalImg = screenshotModal.querySelector('img');
+                        const dividers = document.querySelectorAll('.divider');
+                        dividers.forEach(d=>{
+                                d.addEventListener('mousedown', e=>initDrag(e, d));
+                        });
+                        function initDrag(e, divider){
+                                e.preventDefault();
+                                const prev = divider.previousElementSibling;
+                                const next = divider.nextElementSibling;
+                                const startX = e.clientX;
+                                const prevWidth = prev.getBoundingClientRect().width;
+                                const nextWidth = next.getBoundingClientRect().width;
+                                document.body.classList.add('dragging');
+                                function onMove(ev){
+                                        const dx = ev.clientX - startX;
+                                        prev.style.flex = `0 0 ${prevWidth + dx}px`;
+                                        next.style.flex = `0 0 ${nextWidth - dx}px`;
+                                }
+                                function onUp(){
+                                        document.removeEventListener('mousemove', onMove);
+                                        document.removeEventListener('mouseup', onUp);
+                                        document.body.classList.remove('dragging');
+                                }
+                                document.addEventListener('mousemove', onMove);
+                                document.addEventListener('mouseup', onUp);
+                        }
                         let stopped = false, running = false;
 			let lastDiff = '', lastStepIndex = 0;
 			let logEntries = [];
