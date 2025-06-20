@@ -78,6 +78,18 @@
                                 animation: spin 1s linear infinite;
                         }
                         @keyframes spin { from{transform:rotate(0deg);} to{transform:rotate(360deg);} }
+
+                        #helpOverlay {
+                                position: fixed; top:0; left:0; right:0; bottom:0;
+                                background: rgba(0,0,0,0.6); display:none;
+                                align-items:center; justify-content:center;
+                                z-index:1500;
+                        }
+                        #helpOverlay .panel {
+                                background:#222; color:#eee; padding:20px;
+                                border-radius:8px; max-width:480px; line-height:1.4;
+                        }
+                        #helpOverlay .closeBtn { background:#ad2331; margin-top:1em; }
                 </style>
 		<script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 	</head>
@@ -88,8 +100,9 @@
 			<input id="goalInput" type="text" placeholder="Describe your goal (e.g. responsive gallery with dark mode, contact form...)" />
 			<button id="runAI">Start Auto</button>
 			<button id="stopAI" style="background:#ad2331;display:none;">Stop</button>
-			<button id="settingsBtn" title="Settings" style="margin-left:6px;">⚙️</button>
-		</header>
+                        <button id="settingsBtn" title="Settings" style="margin-left:6px;">⚙️</button>
+                        <button id="helpBtn" title="Help" style="margin-left:6px;">❔</button>
+                </header>
                 <div id="stepper"></div>
                 <div id="progressContainer"><div id="progressBar"></div></div>
                 <main>
@@ -144,10 +157,17 @@
 				<label><input id="juniorMode" type="checkbox" /> Junior Mode (show tips)</label>
 			</div>
 			<div class="row">
-				<label><input id="logDetail" type="checkbox" checked /> Show full prompt/response in log</label>
-			</div>
-		</div>
-		<script>
+                        <label><input id="logDetail" type="checkbox" checked /> Show full prompt/response in log</label>
+                        </div>
+                </div>
+                <div id="helpOverlay">
+                        <div class="panel">
+                                <b style="font-size:1.14em;">❔ Help</b>
+                                <p>Live preview sanitizes the HTML before rendering. Tags like &lt;script&gt;, &lt;iframe&gt;, &lt;object&gt; and &lt;embed&gt; are stripped. Styles using <code>position:fixed</code> are converted to <code>absolute</code> and <code>z-index</code> values above 100 are lowered.</p>
+                                <button class="closeBtn">Close</button>
+                        </div>
+                </div>
+                <script>
 			const editor = document.getElementById('codeEditor');
 			const preview = document.getElementById('previewFrame');
 			const runAI = document.getElementById('runAI');
@@ -155,8 +175,10 @@
 			const statusBar = document.getElementById('statusBar');
 			const goalInput = document.getElementById('goalInput');
 			const apiKeyInput = document.getElementById('apiKey');
-			const settingsBtn = document.getElementById('settingsBtn');
-			const settingsPanel = document.getElementById('settingsPanel');
+                        const settingsBtn = document.getElementById('settingsBtn');
+                        const settingsPanel = document.getElementById('settingsPanel');
+                        const helpBtn = document.getElementById('helpBtn');
+                        const helpOverlay = document.getElementById('helpOverlay');
 			const maxIterationsInput = document.getElementById('maxIterations');
 			const agentDelayInput = document.getElementById('agentDelay');
 			const juniorModeInput = document.getElementById('juniorMode');
@@ -236,11 +258,16 @@ function showSpinner(show){ spinnerOverlay.style.display = show ? 'flex' : 'none
 				window.sessionStorage.setItem('OPENAI_API_KEY', apiKeyInput.value);
 			});
 			
-			function sanitizePreviewHtml(html) {
-				// Remove z-indexes above a certain value and position:fixed styles
-				return html.replace(/z-index\s*:\s*\d{4,};?/gi, 'z-index:100;')
-				.replace(/position\s*:\s*fixed;?/gi, 'position:absolute;');
-			}
+                        function sanitizePreviewHtml(html) {
+                                // Strip potentially dangerous tags
+                                html = html.replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '')
+                                           .replace(/<iframe[^>]*>[\s\S]*?<\/iframe>/gi, '')
+                                           .replace(/<object[^>]*>[\s\S]*?<\/object>/gi, '')
+                                           .replace(/<embed[^>]*>[\s\S]*?<\/embed>/gi, '');
+                                // Remove z-indexes above a certain value and position:fixed styles
+                                return html.replace(/z-index\s*:\s*\d{4,};?/gi, 'z-index:100;')
+                                        .replace(/position\s*:\s*fixed;?/gi, 'position:absolute;');
+                        }
 			
 			// Update this in your code:
 			function updatePreview(html) {
@@ -249,11 +276,16 @@ function showSpinner(show){ spinnerOverlay.style.display = show ? 'flex' : 'none
 			editor.addEventListener('input', ()=>updatePreview(editor.value));
 			
 			// Settings panel show/hide
-			settingsBtn.onclick = ()=>{ settingsPanel.style.display = 'flex'; }
-			settingsPanel.querySelector('.closeBtn').onclick = ()=>{ settingsPanel.style.display = 'none'; }
-			window.addEventListener('keydown', e=>{
-				if(settingsPanel.style.display === 'flex' && e.key==='Escape') settingsPanel.style.display='none';
-			});
+                        settingsBtn.onclick = ()=>{ settingsPanel.style.display = 'flex'; }
+                        settingsPanel.querySelector('.closeBtn').onclick = ()=>{ settingsPanel.style.display = 'none'; }
+                        window.addEventListener('keydown', e=>{
+                                if(settingsPanel.style.display === 'flex' && e.key==='Escape') settingsPanel.style.display='none';
+                        });
+                        helpBtn.onclick = ()=>{ helpOverlay.style.display = 'flex'; }
+                        helpOverlay.querySelector('.closeBtn').onclick = ()=>{ helpOverlay.style.display = 'none'; }
+                        window.addEventListener('keydown', e=>{
+                                if(helpOverlay.style.display === 'flex' && e.key==='Escape') helpOverlay.style.display='none';
+                        });
 			
 			// Pipeline stepper UI
                        function updateStepper(currentStepIdx, iteration=1, maxIterations=1, errorStepIdx=-1){
