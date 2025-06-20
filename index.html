@@ -132,6 +132,7 @@
                                         <div id="screenshotPreview" style="display:none; padding:0.5rem; text-align:center; border-bottom:1px solid #222; background:#111;">
                                                 <img style="max-width:100%; max-height:160px; border:1px solid #555; border-radius:4px; cursor:pointer;" />
                                         </div>
+                                        <div id="planBox" style="display:none; white-space:pre-wrap; background:#1b1e23; border-bottom:1px solid #222; padding:0.5rem; font-size:0.9em; color:#b6e6ff;"></div>
                                         <div id="debugLogList"></div>
                                 </div>
 		</main>
@@ -199,6 +200,7 @@
                         const screenshotModal = document.getElementById('screenshotModal');
 const screenshotModalImg = screenshotModal.querySelector('img');
 const spinnerOverlay = document.getElementById('spinnerOverlay');
+const planBox = document.getElementById('planBox');
 const dividers = document.querySelectorAll('.divider');
 function showSpinner(show){ spinnerOverlay.style.display = show ? 'flex' : 'none'; }
                         dividers.forEach(d=>{
@@ -442,8 +444,10 @@ function showSpinner(show){ spinnerOverlay.style.display = show ? 'flex' : 'none
 				// AGENT: Plan UI/components
                                 statusBar.textContent = "2/8: Planning UI...";
                                 updateStepper(1, 1, maxIterations);
-				let plan = await callAgent(apiKey, "Plan", intent);
-				log("Plan", "UI Plan:\n"+plan);
+                                let plan = await callAgent(apiKey, "Plan", intent);
+                                log("Plan", "UI Plan:\n"+plan);
+                                planBox.textContent = plan;
+                                planBox.style.display = 'block';
 				
 				while (!done && iteration < maxIterations && !stopped) {
 					iteration++;
@@ -500,7 +504,7 @@ function showSpinner(show){ spinnerOverlay.style.display = show ? 'flex' : 'none
 					// AGENT: Improve code
                                         statusBar.textContent = `Iter ${iteration}/${maxIterations}: Improving...`;
                                         updateStepper(6, iteration, maxIterations);
-					code = await callAgent(apiKey, "Improve", code);
+                                        code = await callAgent(apiKey, "Improve", code, plan);
 					log("Improve", "Improved.");
 					editor.value = code; updatePreview(code);
 					
@@ -509,7 +513,7 @@ function showSpinner(show){ spinnerOverlay.style.display = show ? 'flex' : 'none
 				// AGENT: Finalize code
                                 statusBar.textContent = "Finalizing...";
                                 updateStepper(7, iteration, maxIterations);
-				code = await callAgent(apiKey, "Finalize", code);
+                                code = await callAgent(apiKey, "Finalize", code, plan);
 				editor.value = code; updatePreview(code);
                                 log("Finalize", "Final HTML produced.");
                                 progressBar.style.width = '100%';
@@ -542,13 +546,13 @@ function showSpinner(show){ spinnerOverlay.style.display = show ? 'flex' : 'none
 					Only output full HTML, no explanations.`;
 					case "Debug":
 					return `Review this HTML/CSS/JS code:\n${input1}\nDetected runtime errors:\n${input2||"None"}\nFix all issues. Output only corrected code.`;
-					case "Improve":
-					return `Optimize this HTML/CSS/JS for readability, speed, accessibility, responsiveness:\n${input1}\nOutput only the improved HTML.`;
-					case "Finalize":
-					return `Clean up and finalize this HTML code for production, with best practices and comments:\n${input1}\nOutput only the final code.`;
-					default: return input1||"";
-				}
-			}
+                                        case "Improve":
+                                        return `UI plan:\n${input2}\n\nOptimize this HTML/CSS/JS for readability, speed, accessibility, and responsiveness:\n${input1}\nOutput only the improved HTML.`;
+                                        case "Finalize":
+                                        return `UI plan:\n${input2}\n\nClean up and finalize this HTML code for production with best practices and comments:\n${input1}\nOutput only the final code.`;
+                                        default: return input1||"";
+                                }
+                        }
             function escapeHtml(str) {
 	return str.replace(/[&<>"']/g, function(m) {
 		switch (m) {
