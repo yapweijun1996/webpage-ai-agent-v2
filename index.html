@@ -93,17 +93,23 @@
 				<div id="previewLabel">Live Preview</div>
 				<iframe id="previewFrame" sandbox="allow-scripts allow-same-origin"></iframe>
 			</div>
-			<div id="logContainer">
-				<div id="logHeader" style="display:flex; align-items:center;">
-					<span style="flex:1;">AI Debug Log</span>
-					<button class="copyLogBtn">Copy Log</button>
-					<button class="downloadLogBtn">Download Log</button>
-				</div>
-				<div id="debugLogList"></div>
-			</div>
+                                <div id="logContainer">
+                                        <div id="logHeader" style="display:flex; align-items:center;">
+                                                <span style="flex:1;">AI Debug Log</span>
+                                                <button class="copyLogBtn">Copy Log</button>
+                                                <button class="downloadLogBtn">Download Log</button>
+                                        </div>
+                                        <div id="screenshotPreview" style="display:none; padding:0.5rem; text-align:center; border-bottom:1px solid #222; background:#111;">
+                                                <img style="max-width:100%; max-height:160px; border:1px solid #555; border-radius:4px; cursor:pointer;" />
+                                        </div>
+                                        <div id="debugLogList"></div>
+                                </div>
 		</main>
-		<div id="statusBar">Ready.</div>
-		<div id="settingsPanel">
+                <div id="statusBar">Ready.</div>
+                <div id="screenshotModal" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:#000a; align-items:center; justify-content:center; z-index:1000;">
+                        <img style="max-width:90vw; max-height:90vh; border:2px solid #aaa; border-radius:6px;" />
+                </div>
+                <div id="settingsPanel">
 			<div class="row" style="justify-content:space-between;">
 				<b style="font-size:1.14em;">⚙️ Settings</b>
 				<button class="closeBtn">Close</button>
@@ -144,9 +150,13 @@
 			const diffPanel = document.getElementById('diffPanel');
                         const stepper = document.getElementById('stepper');
                         const progressBar = document.getElementById('progressBar');
-			const copyLogBtn = document.querySelector('.copyLogBtn');
-			const downloadLogBtn = document.querySelector('.downloadLogBtn');
-			let stopped = false, running = false;
+                        const copyLogBtn = document.querySelector('.copyLogBtn');
+                        const downloadLogBtn = document.querySelector('.downloadLogBtn');
+                        const screenshotPreview = document.getElementById('screenshotPreview');
+                        const screenshotImg = screenshotPreview.querySelector('img');
+                        const screenshotModal = document.getElementById('screenshotModal');
+                        const screenshotModalImg = screenshotModal.querySelector('img');
+                        let stopped = false, running = false;
 			let lastDiff = '', lastStepIndex = 0;
 			let logEntries = [];
 			const pipelineSteps = [
@@ -239,13 +249,21 @@
 				const plain = logEntries.map(e=>`[${e.step}] ${e.msg}${e.obj ? '\n' + (typeof e.obj==="string"?e.obj:JSON.stringify(e.obj,null,2)) : ""}`).join('\n\n');
 				navigator.clipboard.writeText(plain);
 			};
-			downloadLogBtn.onclick = ()=>{
-				const plain = logEntries.map(e=>`[${e.step}] ${e.msg}${e.obj ? '\n' + (typeof e.obj==="string"?e.obj:JSON.stringify(e.obj,null,2)) : ""}`).join('\n\n');
-				const blob = new Blob([plain],{type:"text/plain"});
-				const a = document.createElement("a");
-				a.href = URL.createObjectURL(blob);
-				a.download = "ai_debug_log.txt"; a.click();
-			};
+                        downloadLogBtn.onclick = ()=>{
+                                const plain = logEntries.map(e=>`[${e.step}] ${e.msg}${e.obj ? '\n' + (typeof e.obj==="string"?e.obj:JSON.stringify(e.obj,null,2)) : ""}`).join('\n\n');
+                                const blob = new Blob([plain],{type:"text/plain"});
+                                const a = document.createElement("a");
+                                a.href = URL.createObjectURL(blob);
+                                a.download = "ai_debug_log.txt"; a.click();
+                        };
+
+                        screenshotImg.onclick = ()=>{
+                                screenshotModalImg.src = screenshotImg.src;
+                                screenshotModal.style.display = 'flex';
+                        };
+                        screenshotModal.onclick = ()=>{
+                                screenshotModal.style.display = 'none';
+                        };
 			
 			// Diff view
 			toggleDiffBtn.onclick = ()=>{
@@ -280,9 +298,12 @@
 			runAI.onclick = async function(){
 				stopped = false; running = true;
 				runAI.disabled = true; stopAI.style.display = '';
-				statusBar.textContent = "Pipeline starting...";
-				debugLogList.innerHTML = ""; logEntries = [];
-				let apiKey = apiKeyInput.value.trim();
+                                statusBar.textContent = "Pipeline starting...";
+                                debugLogList.innerHTML = ""; logEntries = [];
+                                screenshotPreview.style.display = 'none';
+                                screenshotImg.src = '';
+                                screenshotModal.style.display = 'none';
+                                let apiKey = apiKeyInput.value.trim();
 				if (!apiKey || !apiKey.startsWith('sk-')) {
 					alert("Please enter a valid OpenAI API key.");
 					apiKeyInput.focus(); runAI.disabled = false; stopAI.style.display = 'none';
@@ -335,8 +356,12 @@
 					// AGENT: Visual Debug
 					statusBar.textContent = `Iter ${iteration}: Visual Debug...`;
 					updateStepper(4);
-					let screenshot = await captureIframeScreenshot();
-					let visual = await callVisualAgent(apiKey, "Visual Debug", code, errors, screenshot);
+                                        let screenshot = await captureIframeScreenshot();
+                                        if(screenshot){
+                                                screenshotImg.src = screenshot;
+                                                screenshotPreview.style.display = 'block';
+                                        }
+                                        let visual = await callVisualAgent(apiKey, "Visual Debug", code, errors, screenshot);
 					log("Visual Debug", "Visual check: "+(visual.status||visual.message||"-"));
 					if (visual.code && visual.code.toLowerCase().includes("<html"))
 					code = visual.code;
@@ -380,7 +405,7 @@
                                 runAI.disabled = false; stopAI.style.display = 'none'; running = false;
                         };
 			
-			stopAI.onclick = ()=>{ stopped=true; statusBar.textContent="Stopped by user."; stopAI.style.display='none'; runAI.disabled=false; };
+                        stopAI.onclick = ()=>{ stopped=true; statusBar.textContent="Stopped by user."; stopAI.style.display='none'; runAI.disabled=false; screenshotPreview.style.display='none'; screenshotModal.style.display='none'; };
 			
 			function sleep(ms){ return new Promise(r=>setTimeout(r,ms)); }
 			
