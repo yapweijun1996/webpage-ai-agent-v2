@@ -241,17 +241,30 @@
 			});
 			
 			// Pipeline stepper UI
-                        function updateStepper(currentStepIdx, errorStepIdx=-1){
-                                stepper.innerHTML = '';
-                                pipelineSteps.forEach((step, i)=>{
-                                        let cls = 'step' + (i === currentStepIdx ? ' active' : '') + (i < currentStepIdx ? ' done':'') + (i === errorStepIdx ? ' error':'');
-                                        const stepDiv = document.createElement('div');
-                                        stepDiv.className = cls;
-                                        stepDiv.innerText = step;
-                                        stepper.appendChild(stepDiv);
-                                });
-                                progressBar.style.width = `${(currentStepIdx/pipelineSteps.length)*100}%`;
-                        }
+                       function updateStepper(currentStepIdx, iteration=1, maxIterations=1, errorStepIdx=-1){
+                               stepper.innerHTML = '';
+                               pipelineSteps.forEach((step, i)=>{
+                                       let cls = 'step' + (i === currentStepIdx ? ' active' : '') + (i < currentStepIdx ? ' done':'') + (i === errorStepIdx ? ' error':'');
+                                       const stepDiv = document.createElement('div');
+                                       stepDiv.className = cls;
+                                       // show iter count for iterative steps
+                                       if(i>=2 && i<=6){
+                                               stepDiv.innerText = `${step} (${iteration}/${maxIterations})`;
+                                       }else{
+                                               stepDiv.innerText = step;
+                                       }
+                                       stepper.appendChild(stepDiv);
+                               });
+                               let iterProgress = iteration - 1;
+                               let stepProgress = 0;
+                               if(currentStepIdx>=2 && currentStepIdx<=6){
+                                       stepProgress = (currentStepIdx - 1) / 5;
+                               }else if(currentStepIdx>=7){
+                                       stepProgress = 1;
+                               }
+                               const totalProgress = (iterProgress + stepProgress) / maxIterations;
+                               progressBar.style.width = `${Math.min(totalProgress,1)*100}%`;
+                       }
 			
 			// Debug log panel upgrade
 			function log(step, msg, obj, options={}){
@@ -371,24 +384,24 @@
 				let maxIterations = +maxIterationsInput.value || 30;
 				let agentDelay = +agentDelayInput.value || 600;
 				let juniorMode = juniorModeInput.checked;
-				updateStepper(0);
+                               updateStepper(0, 1, maxIterations);
 				
 				// AGENT: Understand user intent
-				statusBar.textContent = "1/8: Understanding goal...";
-				updateStepper(0);
+                                statusBar.textContent = "1/8: Understanding goal...";
+                                updateStepper(0, 1, maxIterations);
 				let intent = await callAgent(apiKey, "Understand", userGoal);
 				log("Understand", "Intent: "+intent);
 				
 				// AGENT: Plan UI/components
-				statusBar.textContent = "2/8: Planning UI...";
-				updateStepper(1);
+                                statusBar.textContent = "2/8: Planning UI...";
+                                updateStepper(1, 1, maxIterations);
 				let plan = await callAgent(apiKey, "Plan", intent);
 				log("Plan", "UI Plan:\n"+plan);
 				
 				while (!done && iteration < maxIterations && !stopped) {
 					iteration++;
-					statusBar.textContent = `Iter ${iteration}: Generating code...`;
-					updateStepper(2);
+                                        statusBar.textContent = `Iter ${iteration}/${maxIterations}: Generating code...`;
+                                        updateStepper(2, iteration, maxIterations);
 					
 					let prevCode = code;
 					code = await callAgent(apiKey, "Generate", plan, code);
@@ -398,16 +411,16 @@
 					editor.value = code; updatePreview(code);
 					
 					// AGENT: Debug (text)
-					statusBar.textContent = `Iter ${iteration}: Debugging...`;
-					updateStepper(3);
+                                        statusBar.textContent = `Iter ${iteration}/${maxIterations}: Debugging...`;
+                                        updateStepper(3, iteration, maxIterations);
 					let errors = await captureIframeConsoleErrors();
 					log("Debug", errors?("Errors:\n"+errors):"No runtime errors found.");
 					let debugged = await callAgent(apiKey, "Debug", code, errors);
 					code = debugged; editor.value = code; updatePreview(code);
 					
 					// AGENT: Visual Debug
-					statusBar.textContent = `Iter ${iteration}: Visual Debug...`;
-					updateStepper(4);
+                                        statusBar.textContent = `Iter ${iteration}/${maxIterations}: Visual Debug...`;
+                                        updateStepper(4, iteration, maxIterations);
                                         let screenshot = await captureIframeScreenshot();
                                         if(screenshot){
                                                 screenshotImg.src = screenshot;
@@ -420,26 +433,26 @@
 					editor.value = code; updatePreview(code);
 					
 					// AGENT: Reflect/Check Goal
-					statusBar.textContent = `Iter ${iteration}: Reflecting on goal...`;
-					updateStepper(5);
+                                        statusBar.textContent = `Iter ${iteration}/${maxIterations}: Reflecting on goal...`;
+                                        updateStepper(5, iteration, maxIterations);
 					let reflection = await callAgent(apiKey, "Reflect", goalInput.value, code);
 					log("Reflect", reflection);
 					if ((reflection||"").toLowerCase().includes("yes") || (visual.status||"").toLowerCase().includes("done")) {
 						done = true;
 						log("DONE", "Goal confirmed by reflect agent.");
-						statusBar.textContent = `Goal achieved (confirmed) in ${iteration} iterations!`;
-						updateStepper(6);
+                                                statusBar.textContent = `Goal achieved (confirmed) in ${iteration} iterations!`;
+                                                updateStepper(6, iteration, maxIterations);
 						break;
 					}
 					if ((visual.status||"").toLowerCase().includes("done") || (visual.message||"").toLowerCase().includes("goal achieved")) {
 						done = true; log("DONE", "Goal achieved by visual agent.");
-						statusBar.textContent = `Goal achieved in ${iteration} iterations!`;
-						updateStepper(6);
+                                                statusBar.textContent = `Goal achieved in ${iteration} iterations!`;
+                                                updateStepper(6, iteration, maxIterations);
 						break;
 					}
 					// AGENT: Improve code
-					statusBar.textContent = `Iter ${iteration}: Improving...`;
-					updateStepper(6);
+                                        statusBar.textContent = `Iter ${iteration}/${maxIterations}: Improving...`;
+                                        updateStepper(6, iteration, maxIterations);
 					code = await callAgent(apiKey, "Improve", code);
 					log("Improve", "Improved.");
 					editor.value = code; updatePreview(code);
@@ -447,8 +460,8 @@
 					await sleep(agentDelay);
 				}
 				// AGENT: Finalize code
-				statusBar.textContent = "Finalizing...";
-				updateStepper(7);
+                                statusBar.textContent = "Finalizing...";
+                                updateStepper(7, iteration, maxIterations);
 				code = await callAgent(apiKey, "Finalize", code);
 				editor.value = code; updatePreview(code);
                                 log("Finalize", "Final HTML produced.");
