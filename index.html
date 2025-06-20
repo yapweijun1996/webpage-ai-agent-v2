@@ -100,6 +100,7 @@
                                 <div id="logContainer">
                                         <div id="logHeader" style="display:flex; align-items:center;">
                                                 <span style="flex:1;">AI Debug Log</span>
+                                                <button id="toggleLogBtn" style="margin-right:1em;">Hide Log</button>
                                                 <button class="copyLogBtn">Copy Log</button>
                                                 <button class="downloadLogBtn">Download Log</button>
                                         </div>
@@ -149,11 +150,13 @@
 			const logDetailInput = document.getElementById('logDetail');
 			const debugLogList = document.getElementById('debugLogList');
 			const copyHtmlBtn = document.getElementById('copyHtmlBtn');
-			const downloadHtmlBtn = document.getElementById('downloadHtmlBtn');
-			const toggleDiffBtn = document.getElementById('toggleDiffBtn');
-			const diffPanel = document.getElementById('diffPanel');
+                        const downloadHtmlBtn = document.getElementById('downloadHtmlBtn');
+                        const toggleDiffBtn = document.getElementById('toggleDiffBtn');
+                        const diffPanel = document.getElementById('diffPanel');
                         const stepper = document.getElementById('stepper');
                         const progressBar = document.getElementById('progressBar');
+                        const logContainer = document.getElementById('logContainer');
+                        const toggleLogBtn = document.getElementById('toggleLogBtn');
                         const copyLogBtn = document.querySelector('.copyLogBtn');
                         const downloadLogBtn = document.querySelector('.downloadLogBtn');
                         const screenshotPreview = document.getElementById('screenshotPreview');
@@ -164,6 +167,26 @@
                         dividers.forEach(d=>{
                                 d.addEventListener('mousedown', e=>initDrag(e, d));
                         });
+                        let logCollapsed = window.sessionStorage.getItem('LOG_COLLAPSED') === 'true';
+                        function updateLogVisibility(){
+                                if(logCollapsed){
+                                        logContainer.style.display='none';
+                                        let dv = logContainer.previousElementSibling;
+                                        if(dv && dv.classList.contains('divider')) dv.style.display='none';
+                                        toggleLogBtn.textContent='Show Log';
+                                }else{
+                                        logContainer.style.display='';
+                                        let dv = logContainer.previousElementSibling;
+                                        if(dv && dv.classList.contains('divider')) dv.style.display='';
+                                        toggleLogBtn.textContent='Hide Log';
+                                }
+                        }
+                        updateLogVisibility();
+                        toggleLogBtn.onclick = ()=>{
+                                logCollapsed = !logCollapsed;
+                                window.sessionStorage.setItem('LOG_COLLAPSED', logCollapsed);
+                                updateLogVisibility();
+                        };
                         function initDrag(e, divider){
                                 e.preventDefault();
                                 const prev = divider.previousElementSibling;
