@@ -27,8 +27,10 @@
 			.step { padding: 0.5em 1em; border-radius: 18px; font-size: 1.04em; color:#92b5e9; background:#222a; }
 			.step.active { color: #f8fdff; background: #1181e4; font-weight: bold;}
 			.step.done { background:#174e34; color:#b6ffc7;}
-			.step.error { background:#822a2a; color:#ffd3d3;}
-			main { flex:1; display:flex; min-height:0;}
+                        .step.error { background:#822a2a; color:#ffd3d3;}
+                        #progressContainer{width:100%;height:4px;background:#333;}
+                        #progressBar{height:4px;width:0;background:#1181e4;transition:width 0.3s;}
+                        main { flex:1; display:flex; min-height:0;}
 			#editorContainer, #previewContainer, #logContainer { flex:1; display:flex; flex-direction:column;}
 			#editorContainer { max-width: 40vw; min-width: 380px; }
 			#previewContainer {
@@ -74,8 +76,9 @@
 			<button id="stopAI" style="background:#ad2331;display:none;">Stop</button>
 			<button id="settingsBtn" title="Settings" style="margin-left:6px;">⚙️</button>
 		</header>
-		<div id="stepper"></div>
-		<main>
+                <div id="stepper"></div>
+                <div id="progressContainer"><div id="progressBar"></div></div>
+                <main>
 			<div id="editorContainer">
 				<div id="editorControls">
 					<button id="copyHtmlBtn">Copy HTML</button>
@@ -139,7 +142,8 @@
 			const downloadHtmlBtn = document.getElementById('downloadHtmlBtn');
 			const toggleDiffBtn = document.getElementById('toggleDiffBtn');
 			const diffPanel = document.getElementById('diffPanel');
-			const stepper = document.getElementById('stepper');
+                        const stepper = document.getElementById('stepper');
+                        const progressBar = document.getElementById('progressBar');
 			const copyLogBtn = document.querySelector('.copyLogBtn');
 			const downloadLogBtn = document.querySelector('.downloadLogBtn');
 			let stopped = false, running = false;
@@ -175,16 +179,17 @@
 			});
 			
 			// Pipeline stepper UI
-			function updateStepper(currentStepIdx, errorStepIdx=-1){
-				stepper.innerHTML = '';
-				pipelineSteps.forEach((step, i)=>{
-					let cls = 'step' + (i === currentStepIdx ? ' active' : '') + (i < currentStepIdx ? ' done':'') + (i === errorStepIdx ? ' error':'');
-					const stepDiv = document.createElement('div');
-					stepDiv.className = cls;
-					stepDiv.innerText = step;
-					stepper.appendChild(stepDiv);
-				});
-			}
+                        function updateStepper(currentStepIdx, errorStepIdx=-1){
+                                stepper.innerHTML = '';
+                                pipelineSteps.forEach((step, i)=>{
+                                        let cls = 'step' + (i === currentStepIdx ? ' active' : '') + (i < currentStepIdx ? ' done':'') + (i === errorStepIdx ? ' error':'');
+                                        const stepDiv = document.createElement('div');
+                                        stepDiv.className = cls;
+                                        stepDiv.innerText = step;
+                                        stepper.appendChild(stepDiv);
+                                });
+                                progressBar.style.width = `${(currentStepIdx/pipelineSteps.length)*100}%`;
+                        }
 			
 			// Debug log panel upgrade
 			function log(step, msg, obj, options={}){
@@ -369,10 +374,11 @@
 				updateStepper(7);
 				code = await callAgent(apiKey, "Finalize", code);
 				editor.value = code; updatePreview(code);
-				log("Finalize", "Final HTML produced.");
-				statusBar.textContent = done ? "Auto-run complete! Goal achieved." : "Stopped or max iterations reached.";
-				runAI.disabled = false; stopAI.style.display = 'none'; running = false;
-			};
+                                log("Finalize", "Final HTML produced.");
+                                progressBar.style.width = '100%';
+                                statusBar.textContent = done ? "Auto-run complete! Goal achieved." : "Stopped or max iterations reached.";
+                                runAI.disabled = false; stopAI.style.display = 'none'; running = false;
+                        };
 			
 			stopAI.onclick = ()=>{ stopped=true; statusBar.textContent="Stopped by user."; stopAI.style.display='none'; runAI.disabled=false; };
 			
