@@ -707,6 +707,25 @@ function showSpinner(show){ spinnerOverlay.style.display = show ? 'flex' : 'none
                                 }catch(e){
                                         console.error("Screenshot failed:", e);
                                         log("Screenshot", e.message, null, {error:true});
+                                        try{
+                                                let stripped = doc.cloneNode(true);
+                                                stripped.querySelectorAll('link[rel="stylesheet"]').forEach(el => el.remove());
+                                                stripped.querySelectorAll('style').forEach(el => el.remove());
+                                                stripped.querySelectorAll('[style]').forEach(el => el.removeAttribute('style'));
+                                                let container = document.createElement('div');
+                                                container.style.cssText = 'position:absolute;left:-9999px;top:-9999px;';
+                                                container.appendChild(stripped.body);
+                                                document.body.appendChild(container);
+                                                try {
+                                                        let canvas = await html2canvas(stripped.body);
+                                                        return canvas.toDataURL("image/png");
+                                                } finally {
+                                                        if(container.parentNode) container.parentNode.removeChild(container);
+                                                }
+                                        }catch(e2){
+                                                console.error("Screenshot retry failed:", e2);
+                                                log("Screenshot retry", e2.message, null, {error:true});
+                                        }
                                 }
                                 return null;
                         }
