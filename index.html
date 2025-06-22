@@ -186,7 +186,7 @@
 		<div id="hiddenPreview" style="position:fixed;left:-9999px;top:-9999px;width:1200px;height:auto;z-index:-1;pointer-events:none;"></div>
 		
 		<script>
-            const MIN_ITERATIONS = 6; // (you can adjust this value, e.g., 6 or 10)
+			const MIN_ITERATIONS = 6; // (you can adjust this value, e.g., 6 or 10)
 			const editor = document.getElementById('codeEditor');
 			const preview = document.getElementById('previewFrame');
 			const runAI = document.getElementById('runAI');
@@ -594,19 +594,19 @@
 					let reflection = await callAgent(apiKey, "Reflect", goalInput.value, code);
 					log("Reflect", reflection);
 					if (
-    (
-        (reflection||"").toLowerCase().includes("yes") ||
-        (visual.status||"").toLowerCase().includes("done") ||
-        (visual.message||"").toLowerCase().includes("goal achieved")
-    )
-    && iteration >= MIN_ITERATIONS
-) {
-    done = true;
-    log("DONE", "Goal confirmed after minimum iterations.");
-    statusBar.textContent = `Goal achieved in ${iteration} iterations!`;
-    updateStepper(6, iteration, maxIterations);
-    break;
-}
+					(
+					(reflection||"").toLowerCase().includes("yes") ||
+					(visual.status||"").toLowerCase().includes("done") ||
+					(visual.message||"").toLowerCase().includes("goal achieved")
+					)
+					&& iteration >= MIN_ITERATIONS
+					) {
+						done = true;
+						log("DONE", "Goal confirmed after minimum iterations.");
+						statusBar.textContent = `Goal achieved in ${iteration} iterations!`;
+						updateStepper(6, iteration, maxIterations);
+						break;
+					}
 					
 					// AGENT: Improve code
 					statusBar.textContent = `Iter ${iteration}/${maxIterations}: Improving...`;
@@ -657,8 +657,8 @@
 					case "Debug":
 					return `Review this HTML/CSS/JS code:\n${input1}\nDetected runtime errors:\n${input2||"None"}\nFix all issues. Output only corrected code.`;
 					case "Improve":
-  return `UI plan:\n${input2}\n\nEnhance this HTML/CSS/JS by making VISIBLE UI/UX improvements: add more modern, beautiful, and interactive elements, richer styling, smoother spacing, improved layout, more appealing colors or effects. Prioritize changes that can be seen by users, and do not introduce \`position:fixed\` or \`z-index\` above 100:\n${input1}\nOutput only the improved HTML.`;
-
+					return `UI plan:\n${input2}\n\nEnhance this HTML/CSS/JS by making VISIBLE UI/UX improvements: add more modern, beautiful, and interactive elements, richer styling, smoother spacing, improved layout, more appealing colors or effects. Prioritize changes that can be seen by users, and do not introduce \`position:fixed\` or \`z-index\` above 100:\n${input1}\nOutput only the improved HTML.`;
+					
 					case "Finalize":
 					return `UI plan:\n${input2}\n\nClean up and finalize this HTML code for production with best practices and comments. Ensure semantic HTML, accessibility attributes where needed, and basic W3C validity:\n${input1}\nOutput only the final code.`;
 					default: return input1||"";
@@ -699,9 +699,9 @@
 								{role:"system", content:`You are the "${agent}" AI agent for web UI development. Be concise and act as instructed.`},
 								{role:"user", content: prompt}
 							],
-                            
-                            temperature: agent==="Generate" ? 0.3 : (agent==="Improve" ? 0.7 : 0.55),max_tokens: 6666
-
+							
+							temperature: agent==="Generate" ? 0.3 : (agent==="Improve" ? 0.7 : 0.55),max_tokens: 6666
+							
 						})
 					});
 					let data = await res.json();
