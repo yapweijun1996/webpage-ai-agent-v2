@@ -676,7 +676,11 @@ function showSpinner(show){ spinnerOverlay.style.display = show ? 'flex' : 'none
 				let doc=preview.contentDocument;
 				if(!doc)return null;
                                 try{
-                                        let canvas = await html2canvas(doc.body);
+                                        let canvas = await html2canvas(doc.body, {
+                                                onclone: cloned => {
+                                                        cloned.querySelectorAll('style').forEach(el => el.remove());
+                                                }
+                                        });
                                         return canvas.toDataURL("image/png");
                                 }catch(e){
                                         console.error("Screenshot failed:", e);
