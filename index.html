@@ -693,20 +693,18 @@ function showSpinner(show){ spinnerOverlay.style.display = show ? 'flex' : 'none
                                         let canvas = await html2canvas(doc.body, {
                                                 onclone: cloned => {
                                                         // remove <style> tags and clean inline styles
+                                                        const parser = document.createElement('div');
                                                         cloned.querySelectorAll('style').forEach(el => el.remove());
                                                         cloned.querySelectorAll('[style]').forEach(el => {
                                                                 const original = el.getAttribute('style');
                                                                 if(!original) return;
-                                                                const safe = [];
-                                                                original.split(';').forEach(r => {
-                                                                        const parts = r.split(':');
-                                                                        if(parts.length >= 2){
-                                                                                const prop = parts[0].trim();
-                                                                                const val = parts.slice(1).join(':').trim();
-                                                                                if(prop && val) safe.push(`${prop}: ${val}`);
-                                                                        }
-                                                                });
-                                                                el.setAttribute('style', safe.join('; '));
+                                                                try{
+                                                                        parser.style.cssText = '';
+                                                                        parser.style.cssText = original;
+                                                                        el.setAttribute('style', parser.style.cssText);
+                                                                }catch(err){
+                                                                        el.removeAttribute('style');
+                                                                }
                                                         });
                                                 }
                                         });
