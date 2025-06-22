@@ -67,18 +67,16 @@
 			.logEntry .logMsg {margin:0.13em 0;}
 			.copyLogBtn, .downloadLogBtn { margin-right: 1em; background:#3e5799;}
 			#diffPanel {background:#182330; color:#b1f1fc; font-family:monospace; padding:1em; font-size:13px; border-radius:7px; border:1px solid #193753; margin:1em;}
-			#spinnerOverlay {
-				position: fixed; top:0; left:0; right:0; bottom:0;
-				background: rgba(0,0,0,0.4); display:none;
-				align-items:center; justify-content:center;
-				z-index:2000;
-			}
-			#spinnerOverlay .spinner {
-				border:6px solid #ddd; border-top:6px solid #1181e4;
-				border-radius:50%; width:50px; height:50px;
-				animation: spin 1s linear infinite;
-			}
-			@keyframes spin { from{transform:rotate(0deg);} to{transform:rotate(360deg);} }
+                       #spinnerOverlay {
+                               position: fixed; top:0; left:0; right:0;
+                               height:4px; background:transparent; display:none;
+                               overflow:hidden; z-index:2000; pointer-events:none;
+                       }
+                       #spinnerOverlay .bar {
+                               position:absolute; left:-30%; top:0; width:30%; height:100%;
+                               background:#1181e4; animation: slide 1s linear infinite;
+                       }
+                       @keyframes slide { from{ left:-30%; } to{ left:100%; } }
 			
 			#helpOverlay {
 				position: fixed; top:0; left:0; right:0; bottom:0;
@@ -146,7 +144,7 @@
 		<div id="screenshotModal" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:#000a; align-items:center; justify-content:center; z-index:1000;">
 			<img style="max-width:90vw; max-height:90vh; border:2px solid #aaa; border-radius:6px;" />
 		</div>
-		<div id="spinnerOverlay"><div class="spinner"></div></div>
+               <div id="spinnerOverlay"><div class="bar"></div></div>
 		<div id="settingsPanel">
 			<div class="row" style="justify-content:space-between;">
 				<b style="font-size:1.14em;">⚙️ Settings</b>
@@ -225,7 +223,7 @@
 			const spinnerOverlay = document.getElementById('spinnerOverlay');
 			const planBox = document.getElementById('planBox');
 			const dividers = document.querySelectorAll('.divider');
-			function showSpinner(show){ spinnerOverlay.style.display = show ? 'flex' : 'none'; }
+                       function showSpinner(show){ spinnerOverlay.style.display = show ? 'block' : 'none'; }
 			dividers.forEach(d=>{
 				d.addEventListener('mousedown', e=>initDrag(e, d));
 			});
