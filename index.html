@@ -436,11 +436,12 @@ function showSpinner(show){ spinnerOverlay.style.display = show ? 'flex' : 'none
 					goalInput.focus(); runAI.disabled = false; stopAI.style.display = 'none';
 					return;
 				}
-				let code = editor.value, iteration = 0, done = false, lastVisual = "";
-				let maxIterations = +maxIterationsInput.value || 30;
-				let agentDelay = +agentDelayInput.value || 600;
-				let juniorMode = juniorModeInput.checked;
-                               updateStepper(0, 1, maxIterations);
+                                 let code = editor.value, iteration = 0, done = false, lastVisual = "";
+                                 let maxIterations = +maxIterationsInput.value || 30;
+                                 let agentDelay = +agentDelayInput.value || 600;
+                                 let juniorMode = juniorModeInput.checked;
+                                 let unresolvedErrors = {};
+                                 updateStepper(0, 1, maxIterations);
 				
 				// AGENT: Understand user intent
                                 statusBar.textContent = "1/8: Understanding goal...";
@@ -471,10 +472,22 @@ function showSpinner(show){ spinnerOverlay.style.display = show ? 'flex' : 'none
 					// AGENT: Debug (text)
                                         statusBar.textContent = `Iter ${iteration}/${maxIterations}: Debugging...`;
                                         updateStepper(3, iteration, maxIterations);
-					let errors = await captureIframeConsoleErrors();
-					log("Debug", errors?("Errors:\n"+errors):"No runtime errors found.");
-					let debugged = await callAgent(apiKey, "Debug", code, errors);
-					code = debugged; editor.value = code; updatePreview(code);
+                                         let errors = await captureIframeConsoleErrors();
+                                         log("Debug", errors?("Errors:\n"+errors):"No runtime errors found.");
+
+                                         let currentList = errors ? errors.split('\n').filter(e=>e.trim()) : [];
+                                         currentList.forEach(err=>{
+                                                 unresolvedErrors[err] = (unresolvedErrors[err]||0)+1;
+                                         });
+                                         for(let err in unresolvedErrors){
+                                                 if(!currentList.includes(err)) delete unresolvedErrors[err];
+                                         }
+                                         let errorSummary = Object.entries(unresolvedErrors)
+                                                 .map(([e,c])=> c>1?`${e} (x${c})`:e)
+                                                 .join('\n');
+
+                                         let debugged = await callAgent(apiKey, "Debug", code, errorSummary);
+                                         code = debugged; editor.value = code; updatePreview(code);
 					
 					// AGENT: Visual Debug
                                         statusBar.textContent = `Iter ${iteration}/${maxIterations}: Visual Debug...`;
@@ -484,7 +497,7 @@ function showSpinner(show){ spinnerOverlay.style.display = show ? 'flex' : 'none
                                                 screenshotImg.src = screenshot;
                                                 screenshotPreview.style.display = 'block';
                                         }
-                                        let visual = await callVisualAgent(apiKey, "Visual Debug", code, errors, screenshot);
+                                         let visual = await callVisualAgent(apiKey, "Visual Debug", code, errorSummary, screenshot);
                                         log("Visual Debug", "Visual check: "+(visual.status||visual.message||"-"));
                                         if (visual.code && visual.code.toLowerCase().includes("<html"))
                                         code = visual.code;
