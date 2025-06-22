@@ -163,12 +163,12 @@
 			<div class="row">
 				<label><input id="juniorMode" type="checkbox" /> Junior Mode (show tips)</label>
 			</div>
-                        <div class="row">
-                                <label><input id="logDetail" type="checkbox" checked /> Show full prompt/response in log</label>
-                        </div>
-                        <div class="row">
-                                <label><input id="showDebugLog" type="checkbox" /> Show Debug Log</label>
-                        </div>
+			<div class="row">
+				<label><input id="logDetail" type="checkbox" checked /> Show full prompt/response in log</label>
+			</div>
+			<div class="row">
+				<label><input id="showDebugLog" type="checkbox" /> Show Debug Log</label>
+			</div>
 		</div>
 		<div id="helpOverlay">
 			<div class="panel">
@@ -199,18 +199,18 @@
 			const helpOverlay = document.getElementById('helpOverlay');
 			const maxIterationsInput = document.getElementById('maxIterations');
 			const agentDelayInput = document.getElementById('agentDelay');
-                        const juniorModeInput = document.getElementById('juniorMode');
-                        const logDetailInput = document.getElementById('logDetail');
-                        const showDebugLogInput = document.getElementById('showDebugLog');
+			const juniorModeInput = document.getElementById('juniorMode');
+			const logDetailInput = document.getElementById('logDetail');
+			const showDebugLogInput = document.getElementById('showDebugLog');
 			const debugLogList = document.getElementById('debugLogList');
 			const copyHtmlBtn = document.getElementById('copyHtmlBtn');
 			const downloadHtmlBtn = document.getElementById('downloadHtmlBtn');
 			const toggleDiffBtn = document.getElementById('toggleDiffBtn');
-                        const diffPanel = document.getElementById('diffPanel');
-                        const stepper = document.getElementById('stepper');
-                        const progressBar = document.getElementById('progressBar');
-                        const editorContainer = document.getElementById('editorContainer');
-                        const previewContainer = document.getElementById('previewContainer');
+			const diffPanel = document.getElementById('diffPanel');
+			const stepper = document.getElementById('stepper');
+			const progressBar = document.getElementById('progressBar');
+			const editorContainer = document.getElementById('editorContainer');
+			const previewContainer = document.getElementById('previewContainer');
 			const logContainer = document.getElementById('logContainer');
 			const logContent = document.getElementById('logContent');
 			const toggleLogBtn = document.getElementById('toggleLogBtn');
@@ -227,45 +227,45 @@
 			dividers.forEach(d=>{
 				d.addEventListener('mousedown', e=>initDrag(e, d));
 			});
-                        let logCollapsed = window.localStorage.getItem('LOG_COLLAPSED') === 'true';
-                        showDebugLogInput.checked = !logCollapsed;
-                        let savedLogFlex = '';
-                        let savedPrevFlex = '';
-                        let savedEditorFlex = '';
-                        function updateLogVisibility(){
-                                const divider = logContainer.previousElementSibling;
-                                if(logCollapsed){
-                                        logContent.style.display = 'none';
-                                        savedLogFlex = logContainer.style.flex;
-                                        savedPrevFlex = previewContainer.style.flex;
-                                        savedEditorFlex = editorContainer.style.flex;
-                                        logContainer.style.display = 'none';
-                                        if(divider && divider.classList.contains('divider')) divider.style.display = 'none';
-                                        previewContainer.style.flex = '';
-                                        editorContainer.style.flex = '';
-                                        toggleLogBtn.textContent = 'Show Log';
-                                } else {
-                                        logContent.style.display = '';
-                                        logContainer.style.display = '';
-                                        if(divider && divider.classList.contains('divider')) divider.style.display = '';
-                                        if(savedLogFlex) logContainer.style.flex = savedLogFlex;
-                                        if(savedPrevFlex) previewContainer.style.flex = savedPrevFlex;
-                                        if(savedEditorFlex) editorContainer.style.flex = savedEditorFlex;
-                                        toggleLogBtn.textContent = 'Hide Log';
-                                }
-                        }
+			let logCollapsed = window.localStorage.getItem('LOG_COLLAPSED') === 'true';
+			showDebugLogInput.checked = !logCollapsed;
+			let savedLogFlex = '';
+			let savedPrevFlex = '';
+			let savedEditorFlex = '';
+			function updateLogVisibility(){
+				const divider = logContainer.previousElementSibling;
+				if(logCollapsed){
+					logContent.style.display = 'none';
+					savedLogFlex = logContainer.style.flex;
+					savedPrevFlex = previewContainer.style.flex;
+					savedEditorFlex = editorContainer.style.flex;
+					logContainer.style.display = 'none';
+					if(divider && divider.classList.contains('divider')) divider.style.display = 'none';
+					previewContainer.style.flex = '';
+					editorContainer.style.flex = '';
+					toggleLogBtn.textContent = 'Show Log';
+				} else {
+					logContent.style.display = '';
+					logContainer.style.display = '';
+					if(divider && divider.classList.contains('divider')) divider.style.display = '';
+					if(savedLogFlex) logContainer.style.flex = savedLogFlex;
+					if(savedPrevFlex) previewContainer.style.flex = savedPrevFlex;
+					if(savedEditorFlex) editorContainer.style.flex = savedEditorFlex;
+					toggleLogBtn.textContent = 'Hide Log';
+				}
+			}
 			updateLogVisibility();
-                        toggleLogBtn.onclick = ()=>{
-                                logCollapsed = !logCollapsed;
-                                window.localStorage.setItem('LOG_COLLAPSED', logCollapsed);
-                                showDebugLogInput.checked = !logCollapsed;
-                                updateLogVisibility();
-                        };
-                        showDebugLogInput.onchange = () => {
-                                logCollapsed = !showDebugLogInput.checked;
-                                window.localStorage.setItem('LOG_COLLAPSED', logCollapsed);
-                                updateLogVisibility();
-                        };
+			toggleLogBtn.onclick = ()=>{
+				logCollapsed = !logCollapsed;
+				window.localStorage.setItem('LOG_COLLAPSED', logCollapsed);
+				showDebugLogInput.checked = !logCollapsed;
+				updateLogVisibility();
+			};
+			showDebugLogInput.onchange = () => {
+				logCollapsed = !showDebugLogInput.checked;
+				window.localStorage.setItem('LOG_COLLAPSED', logCollapsed);
+				updateLogVisibility();
+			};
 			function initDrag(e, divider){
 				e.preventDefault();
 				const prev = divider.previousElementSibling;
@@ -300,24 +300,24 @@
 				window.sessionStorage.setItem('OPENAI_API_KEY', apiKeyInput.value);
 			});
 			
-                        function sanitizePreviewHtml(html) {
-                                // Strip potentially dangerous tags
-                                html = html.replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '')
-                                .replace(/<iframe[^>]*>[\s\S]*?<\/iframe>/gi, '')
-                                .replace(/<object[^>]*>[\s\S]*?<\/object>/gi, '')
-                                .replace(/<embed[^>]*>[\s\S]*?<\/embed>/gi, '');
-                                // Remove z-indexes above a certain value and position:fixed styles
-                                return html.replace(/z-index\s*:\s*\d{4,};?/gi, 'z-index:100;')
-                                .replace(/position\s*:\s*fixed;?/gi, 'position:absolute;');
-                        }
-
-                        function enforceStyleRestrictions(html) {
-                                return html
-                                .replace(/position\s*:\s*fixed/gi, 'position:absolute')
-                                .replace(/z-index\s*:\s*(\d+)/gi, (m, val) => {
-                                        return parseInt(val, 10) > 100 ? 'z-index:100' : m;
-                                });
-                        }
+			function sanitizePreviewHtml(html) {
+				// Strip potentially dangerous tags
+				html = html.replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '')
+				.replace(/<iframe[^>]*>[\s\S]*?<\/iframe>/gi, '')
+				.replace(/<object[^>]*>[\s\S]*?<\/object>/gi, '')
+				.replace(/<embed[^>]*>[\s\S]*?<\/embed>/gi, '');
+				// Remove z-indexes above a certain value and position:fixed styles
+				return html.replace(/z-index\s*:\s*\d{4,};?/gi, 'z-index:100;')
+				.replace(/position\s*:\s*fixed;?/gi, 'position:absolute;');
+			}
+			
+			function enforceStyleRestrictions(html) {
+				return html
+				.replace(/position\s*:\s*fixed/gi, 'position:absolute')
+				.replace(/z-index\s*:\s*(\d+)/gi, (m, val) => {
+					return parseInt(val, 10) > 100 ? 'z-index:100' : m;
+				});
+			}
 			
 			function sanitizeStyleText(styleStr) {
 				const tmp = document.createElement('div');
@@ -343,25 +343,25 @@
 			
 			
 			function updatePreview(html) {
-  preview.srcdoc = sanitizePreviewHtml(html);
-
-  const hiddenPreview = document.getElementById('hiddenPreview');
-  let hiddenIframe = hiddenPreview.querySelector('iframe');
-  if (!hiddenIframe) {
-    hiddenIframe = document.createElement('iframe');
-    hiddenIframe.style.width = '1200px';
-    hiddenIframe.style.height = '800px';
-    hiddenIframe.style.border = 'none';
-    hiddenIframe.sandbox = 'allow-same-origin allow-scripts';
-    hiddenPreview.appendChild(hiddenIframe);
-  }
-
-  // 直接写入文档，不销毁iframe节点
-  hiddenIframe.contentDocument.open();
-  hiddenIframe.contentDocument.write(sanitizePreviewHtml(html));
-  hiddenIframe.contentDocument.close();
-}
-
+				preview.srcdoc = sanitizePreviewHtml(html);
+				
+				const hiddenPreview = document.getElementById('hiddenPreview');
+				let hiddenIframe = hiddenPreview.querySelector('iframe');
+				if (!hiddenIframe) {
+					hiddenIframe = document.createElement('iframe');
+					hiddenIframe.style.width = '1200px';
+					hiddenIframe.style.height = '800px';
+					hiddenIframe.style.border = 'none';
+					hiddenIframe.sandbox = 'allow-same-origin allow-scripts';
+					hiddenPreview.appendChild(hiddenIframe);
+				}
+				
+				// 直接写入文档，不销毁iframe节点
+				hiddenIframe.contentDocument.open();
+				hiddenIframe.contentDocument.write(sanitizePreviewHtml(html));
+				hiddenIframe.contentDocument.close();
+			}
+			
 			editor.addEventListener('input', ()=>updatePreview(editor.value));
 			
 			// Settings panel show/hide
@@ -608,10 +608,10 @@
 					// AGENT: Improve code
 					statusBar.textContent = `Iter ${iteration}/${maxIterations}: Improving...`;
 					updateStepper(6, iteration, maxIterations);
-                                        code = await callAgent(apiKey, "Improve", code, plan);
-                                        code = enforceStyleRestrictions(code);
-                                        log("Improve", "Improved.");
-                                        editor.value = code; updatePreview(code);
+					code = await callAgent(apiKey, "Improve", code, plan);
+					code = enforceStyleRestrictions(code);
+					log("Improve", "Improved.");
+					editor.value = code; updatePreview(code);
 					
 					await sleep(agentDelay);
 				}
@@ -639,24 +639,24 @@
 					return `Summarize this web project goal in 1-2 sentences, extract intent and any requirements:\n"${input1}"`;
 					case "Plan":
 					return `Based on this user intent:\n"${input1}"\nProvide a numbered list of UI components, each followed by a short purpose. Example:\n1. Component name – description.`;
-                                        case "Generate":
-                                        return `Goal: ${goalInput.value}
-
-Generate a valid, standalone HTML file (with inline CSS/JS) implementing this UI plan:
-                                        ${input1}
-
-                                        IMPORTANT: Do NOT use 'position:fixed' or 'z-index' above 100 in your styles.
-                                        Do NOT cover the entire viewport outside your container. Your code is rendered inside a limited area only.
-
-                                        If prior code exists, improve or merge with:
-                                        ${input2||"(none)"}
-                                        Only output full HTML, no explanations.`;
+					case "Generate":
+					return `Goal: ${goalInput.value}
+					
+					Generate a valid, standalone HTML file (with inline CSS/JS) implementing this UI plan:
+					${input1}
+					
+					IMPORTANT: Do NOT use 'position:fixed' or 'z-index' above 100 in your styles.
+					Do NOT cover the entire viewport outside your container. Your code is rendered inside a limited area only.
+					
+					If prior code exists, improve or merge with:
+					${input2||"(none)"}
+					Only output full HTML, no explanations.`;
 					case "Debug":
 					return `Review this HTML/CSS/JS code:\n${input1}\nDetected runtime errors:\n${input2||"None"}\nFix all issues. Output only corrected code.`;
-                                        case "Improve":
-                                        return `UI plan:\n${input2}\n\nOptimize this HTML/CSS/JS for readability, speed, accessibility, and responsiveness. Do not introduce \`position:fixed\` or \`z-index\` above 100:\n${input1}\nOutput only the improved HTML.`;
+					case "Improve":
+					return `UI plan:\n${input2}\n\nOptimize this HTML/CSS/JS for readability, speed, accessibility, and responsiveness. Do not introduce \`position:fixed\` or \`z-index\` above 100:\n${input1}\nOutput only the improved HTML.`;
 					case "Finalize":
-                                        return `UI plan:\n${input2}\n\nClean up and finalize this HTML code for production with best practices and comments. Ensure semantic HTML, accessibility attributes where needed, and basic W3C validity:\n${input1}\nOutput only the final code.`;
+					return `UI plan:\n${input2}\n\nClean up and finalize this HTML code for production with best practices and comments. Ensure semantic HTML, accessibility attributes where needed, and basic W3C validity:\n${input1}\nOutput only the final code.`;
 					default: return input1||"";
 				}
 			}
@@ -773,64 +773,64 @@ Generate a valid, standalone HTML file (with inline CSS/JS) implementing this UI
 				});
 			}
 			async function captureIframeScreenshot() {
-  const hiddenPreview = document.getElementById('hiddenPreview');
-  const hiddenIframe = hiddenPreview.querySelector('iframe');
-  if (!hiddenIframe) return null;
-
-  await new Promise(resolve => {
-    if (hiddenIframe.contentDocument.readyState === 'complete') {
-      resolve();
-    } else {
-      hiddenIframe.onload = () => resolve();
-    }
-  });
-
-  const doc = hiddenIframe.contentDocument;
-  if (!doc || !doc.body) return null;
-
-  // 等待字体加载完成
-  if (doc.fonts && doc.fonts.ready) await doc.fonts.ready;
-
-  // 等待iframe内所有图片加载完成
-  const imgs = [...doc.images];
-  await Promise.all(imgs.map(img => new Promise(res => {
-    if (img.complete && img.naturalWidth !== 0) res();
-    else img.onload = res;
-    img.onerror = res; // 避免死等
-  })));
-
-  await new Promise(res => setTimeout(res, 80)); // 给浏览器一点时间渲染
-
-  try {
-    return await window.domtoimage.toPng(doc.body, {
-      bgcolor: "#fff",
-      cacheBust: true,
-      filter: node => {
-        if (node.tagName === 'IMG') {
-          console.log('Processing image src:', node.src);
-          if (node.src.includes('via.placeholder.com')) {
-            console.log('Filtered out placeholder image');
-            return false;
-          }
-          if (!node.src.startsWith(window.location.origin) && !node.src.startsWith('data:')) {
-            console.warn('External image detected without CORS:', node.src);
-            return false;
-          }
-          if (!node.complete || node.naturalWidth === 0) {
-            console.warn('Image not loaded or failed:', node.src);
-            return false;
-          }
-        }
-        return true;
-      }
-    });
-  } catch (err) {
-    console.error("Screenshot failed:", err);
-    return null;
-  }
-}
-
-
+				const hiddenPreview = document.getElementById('hiddenPreview');
+				const hiddenIframe = hiddenPreview.querySelector('iframe');
+				if (!hiddenIframe) return null;
+				
+				await new Promise(resolve => {
+					if (hiddenIframe.contentDocument.readyState === 'complete') {
+						resolve();
+					} else {
+						hiddenIframe.onload = () => resolve();
+					}
+				});
+				
+				const doc = hiddenIframe.contentDocument;
+				if (!doc || !doc.body) return null;
+				
+				// 等待字体加载完成
+				if (doc.fonts && doc.fonts.ready) await doc.fonts.ready;
+				
+				// 等待iframe内所有图片加载完成
+				const imgs = [...doc.images];
+				await Promise.all(imgs.map(img => new Promise(res => {
+					if (img.complete && img.naturalWidth !== 0) res();
+					else img.onload = res;
+					img.onerror = res; // 避免死等
+				})));
+				
+				await new Promise(res => setTimeout(res, 80)); // 给浏览器一点时间渲染
+				
+				try {
+					return await window.domtoimage.toPng(doc.body, {
+						bgcolor: "#fff",
+						cacheBust: true,
+						filter: node => {
+							if (node.tagName === 'IMG') {
+								console.log('Processing image src:', node.src);
+								if (node.src.includes('via.placeholder.com')) {
+									console.log('Filtered out placeholder image');
+									return false;
+								}
+								if (!node.src.startsWith(window.location.origin) && !node.src.startsWith('data:')) {
+									console.warn('External image detected without CORS:', node.src);
+									return false;
+								}
+								if (!node.complete || node.naturalWidth === 0) {
+									console.warn('Image not loaded or failed:', node.src);
+									return false;
+								}
+							}
+							return true;
+						}
+					});
+				} catch (err) {
+					console.error("Screenshot failed:", err);
+					return null;
+				}
+			}
+			
+			
 			
 			
 			
