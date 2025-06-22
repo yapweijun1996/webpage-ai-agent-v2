@@ -607,12 +607,7 @@
     updateStepper(6, iteration, maxIterations);
     break;
 }
-					if ((visual.status||"").toLowerCase().includes("done") || (visual.message||"").toLowerCase().includes("goal achieved")) {
-						done = true; log("DONE", "Goal achieved by visual agent.");
-						statusBar.textContent = `Goal achieved in ${iteration} iterations!`;
-						updateStepper(6, iteration, maxIterations);
-						break;
-					}
+					
 					// AGENT: Improve code
 					statusBar.textContent = `Iter ${iteration}/${maxIterations}: Improving...`;
 					updateStepper(6, iteration, maxIterations);
