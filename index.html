@@ -693,18 +693,13 @@ function showSpinner(show){ spinnerOverlay.style.display = show ? 'flex' : 'none
                                         let canvas = await html2canvas(doc.body, {
                                                 onclone: cloned => {
                                                         // remove <style> tags and clean inline styles
-                                                        const parser = document.createElement('div');
                                                         cloned.querySelectorAll('style').forEach(el => el.remove());
                                                         cloned.querySelectorAll('[style]').forEach(el => {
-                                                                const original = el.getAttribute('style');
-                                                                if(!original) return;
-                                                                try{
-                                                                        parser.style.cssText = '';
-                                                                        parser.style.cssText = original;
-                                                                        el.setAttribute('style', parser.style.cssText);
-                                                                }catch(err){
-                                                                        el.removeAttribute('style');
-                                                                }
+                                                                const original = el.getAttribute('style') || '';
+                                                                el.removeAttribute('style');
+                                                                try { el.style.cssText = original; }
+                                                                catch { /* ignore invalid style declarations */ }
+                                                                el.setAttribute('style', el.style.cssText);
                                                         });
                                                 }
                                         });
