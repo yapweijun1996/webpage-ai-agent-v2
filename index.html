@@ -67,7 +67,9 @@
 			.logEntry .logMsg.warn {color:#ffb854;}
 			.logEntry .logMsg {margin:0.13em 0;}
 			.copyLogBtn, .downloadLogBtn { margin-right: 1em; background:#3e5799;}
-			#diffPanel {background:#182330; color:#b1f1fc; font-family:monospace; padding:1em; font-size:13px; border-radius:7px; border:1px solid #193753; margin:1em;}
+                        #diffPanel {background:#182330; color:#b1f1fc; font-family:monospace; padding:1em; font-size:13px; border-radius:7px; border:1px solid #193753; margin:1em;}
+                        #diffPanel del {background:#541111; color:#ffd6d6; text-decoration:none;}
+                        #diffPanel ins {background:#113f26; color:#b6ffd6; text-decoration:none;}
                        #spinnerOverlay {
                                position: fixed; top:0; left:0; right:0;
                                height:4px; background:transparent; display:none;
@@ -91,7 +93,8 @@
 			}
 			#helpOverlay .closeBtn { background:#ad2331; margin-top:1em; }
 		</style>
-		<script src="https://cdn.jsdelivr.net/npm/dom-to-image-more@latest/dist/dom-to-image-more.min.js"></script>
+                <script src="https://cdn.jsdelivr.net/npm/dom-to-image-more@latest/dist/dom-to-image-more.min.js"></script>
+                <script src="lib/diff-match-patch.js"></script>
 		
 		
 		
@@ -470,14 +473,14 @@
 			};
 			
 			// Diff view
-			toggleDiffBtn.onclick = ()=>{
-				if(diffPanel.style.display === "none"){
-					diffPanel.style.display = "block";
-					diffPanel.innerHTML = lastDiff||"(No changes)";
-				} else {
-					diffPanel.style.display = "none";
-				}
-			};
+                        toggleDiffBtn.onclick = ()=>{
+                                if(diffPanel.style.display === "none"){
+                                        diffPanel.innerHTML = lastDiff || "(No changes)";
+                                        diffPanel.style.display = "block";
+                                } else {
+                                        diffPanel.style.display = "none";
+                                }
+                        };
 			
 			
 			// Initial HTML
@@ -692,15 +695,20 @@
 				});
 			}
 			
-			function simpleDiff(before, after) {
-				if (before === after) return "";
-				let b = before.split('\n'), a = after.split('\n');
-				let diff = [];
-				for (let i = 0; i < Math.max(b.length, a.length); i++) {
-					if (b[i] !== a[i]) diff.push(`- ${b[i]||""}\n+ ${a[i]||""}`);
-				}
-				return diff.join('\n');
-			}
+                        function simpleDiff(before, after) {
+                                if (before === after) return "";
+                                const dmp = new diff_match_patch();
+                                const diffs = dmp.diff_main(before, after);
+                                dmp.diff_cleanupSemantic(diffs);
+                                let html = diffs.map(d => {
+                                        const [op, data] = d;
+                                        const text = escapeHtml(data).replace(/\n/g, '<br>');
+                                        if (op === DIFF_INSERT) return `<ins>+ ${text}</ins>`;
+                                        if (op === DIFF_DELETE) return `<del>- ${text}</del>`;
+                                        return `<span>${text}</span>`;
+                                }).join('\n');
+                                return html;
+                        }
 			async function callAgent(apiKey, agent, input1, input2){
 				let prompt = agentPrompt(agent, input1, input2);
 				if(logDetailInput.checked) log(agent, "Prompt:", prompt);
