@@ -654,7 +654,7 @@
                                         case "Improve":
                                         return `UI plan:\n${input2}\n\nOptimize this HTML/CSS/JS for readability, speed, accessibility, and responsiveness. Do not introduce \`position:fixed\` or \`z-index\` above 100:\n${input1}\nOutput only the improved HTML.`;
 					case "Finalize":
-					return `UI plan:\n${input2}\n\nClean up and finalize this HTML code for production with best practices and comments:\n${input1}\nOutput only the final code.`;
+                                        return `UI plan:\n${input2}\n\nClean up and finalize this HTML code for production with best practices and comments. Ensure semantic HTML, accessibility attributes where needed, and basic W3C validity:\n${input1}\nOutput only the final code.`;
 					default: return input1||"";
 				}
 			}
