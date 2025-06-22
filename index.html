@@ -227,7 +227,7 @@
 			dividers.forEach(d=>{
 				d.addEventListener('mousedown', e=>initDrag(e, d));
 			});
-                        let logCollapsed = window.sessionStorage.getItem('LOG_COLLAPSED') === 'true';
+                        let logCollapsed = window.localStorage.getItem('LOG_COLLAPSED') === 'true';
                         showDebugLogInput.checked = !logCollapsed;
                         let savedLogFlex = '';
                         let savedPrevFlex = '';
@@ -257,13 +257,13 @@
 			updateLogVisibility();
                         toggleLogBtn.onclick = ()=>{
                                 logCollapsed = !logCollapsed;
-                                window.sessionStorage.setItem('LOG_COLLAPSED', logCollapsed);
+                                window.localStorage.setItem('LOG_COLLAPSED', logCollapsed);
                                 showDebugLogInput.checked = !logCollapsed;
                                 updateLogVisibility();
                         };
                         showDebugLogInput.onchange = () => {
                                 logCollapsed = !showDebugLogInput.checked;
-                                window.sessionStorage.setItem('LOG_COLLAPSED', logCollapsed);
+                                window.localStorage.setItem('LOG_COLLAPSED', logCollapsed);
                                 updateLogVisibility();
                         };
 			function initDrag(e, divider){
