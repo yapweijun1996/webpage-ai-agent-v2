@@ -713,27 +713,23 @@ function sanitizePreviewHtml(html) {
                                 if(!doc) return null;
                                 try{
                                         let canvas = await html2canvas(doc.body, {
+                                                useCORS: true,
                                                 onclone: cloned => {
-                                                        // remove <style> tags and clean inline styles
-                                                        cloned.querySelectorAll('style').forEach(el => el.remove());
+                                                        // remove <link rel="stylesheet"> and <style> tags
+                                                        cloned.querySelectorAll('link[rel="stylesheet"], style').forEach(el => el.remove());
+                                                        // reassign inline styles individually, skipping malformed declarations
                                                         cloned.querySelectorAll('[style]').forEach(el => {
-                                                                const original = el.getAttribute('style') || '';
-                                                                const sanitized = sanitizeStyleText(original);
-                                                                if (original.trim() && sanitized !== original.trim()) {
-                                                                        const removed = [];
-                                                                        original.split(';').forEach(p => {
-                                                                                p = p.trim();
-                                                                                if (!p) return;
-                                                                                const tmp = document.createElement('div');
-                                                                                try { tmp.style.cssText = p; } catch {}
-                                                                                if (tmp.style.length === 0) removed.push(p);
-                                                                        });
-                                                                        if (removed.length) {
-                                                                                console.log('Removed invalid styles on', '<' + el.tagName.toLowerCase() + '>', removed.join('; '));
+                                                                const cssText = el.getAttribute('style') || '';
+                                                                el.removeAttribute('style');
+                                                                cssText.split(';').forEach(pair => {
+                                                                        pair = pair.trim();
+                                                                        if(!pair) return;
+                                                                        try {
+                                                                                el.style.cssText += pair + ';';
+                                                                        } catch(e) {
+                                                                                /* ignore invalid declaration */
                                                                         }
-                                                                }
-                                                                if (sanitized) el.setAttribute('style', sanitized);
-                                                                else el.removeAttribute('style');
+                                                                });
                                                         });
                                                 }
                                         });
@@ -749,7 +745,7 @@ function sanitizePreviewHtml(html) {
                                                 container.appendChild(stripped.body);
                                                 document.body.appendChild(container);
                                                 try {
-                                                        let canvas = await html2canvas(stripped.body);
+                                                        let canvas = await html2canvas(stripped.body, {useCORS: true});
                                                         log("Screenshot", "Fallback capture succeeded.");
                                                         return canvas.toDataURL("image/png");
                                                 } finally {
