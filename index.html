@@ -610,7 +610,7 @@ function showSpinner(show){ spinnerOverlay.style.display = show ? 'flex' : 'none
                                 showSpinner(true);
                                 try{
                                 let messages=[
-                                        {role:"system", content:"You are the Visual Debug AI agent. Analyze the provided web page screenshot, errors, and HTML code. Suggest or directly fix visual bugs. Always reply with a JSON object {status, message, code}. The code key should contain the fixed HTML if modifications are needed. If all is good and the goal is clearly met, respond with {\"status\":\"done\"}."},
+                                        {role:"system", content:"You are the Visual Debug AI agent. Analyze the provided web page screenshot, errors, and HTML code. Suggest or directly fix visual bugs. Always reply with a JSON object {status, message, code}. Use short notes in the `message` field for any remaining issues. The code key should contain the fixed HTML if modifications are needed. If the page already meets the user goal visually, respond with {\"status\":\"done\"}."},
                                         {role:"user", content:[
                                                 {type:"image_url", image_url:{url:base64Image}},
                                                 {type:"text", text:`Goal: ${goalInput.value}\nErrors: ${errors||"None"}\n\nCode:\n${code}`}
