@@ -5,7 +5,7 @@
 		<meta name="viewport" content="width=device-width,initial-scale=1" />
 		<title>Auto Multi-Agent AI Web Code Generator (Visual Debug, Log)</title>
 		<style>
-			body { margin:0; font-family: 'Segoe UI', Arial, sans-serif; background: #171b20; color: #f0f0f5; height: 100vh; display: flex; flex-direction: column;}
+			body { margin:0; font-family: 'Segoe UI', Arial, sans-serif; background: #171b20; color: #f0f0f5; height: 100vh; display: flex; flex-direction: column; padding:0px;}
 			header { background: #212630; padding: 1.1rem 1.5rem; display: flex; align-items: center; gap: 1rem; }
 			header input[type="password"], header input[type="text"] { font-size: 1rem; padding: 0.5rem; border-radius: 7px; border: 1px solid #444; background: #181b20; color: #e9e9e9; }
 			#goalInput { flex:1; }
@@ -27,26 +27,26 @@
 			.step { padding: 0.5em 1em; border-radius: 18px; font-size: 1.04em; color:#92b5e9; background:#222a; }
 			.step.active { color: #f8fdff; background: #1181e4; font-weight: bold;}
 			.step.done { background:#174e34; color:#b6ffc7;}
-                        .step.error { background:#822a2a; color:#ffd3d3;}
-                        #progressContainer{width:100%;height:4px;background:#333;}
-                        #progressBar{height:4px;width:0;background:#1181e4;transition:width 0.3s;}
-                        main { flex:1; display:flex; min-height:0;}
-			#editorContainer, #previewContainer, #logContainer { flex:1; display:flex; flex-direction:column;}
+			.step.error { background:#822a2a; color:#ffd3d3;}
+			#progressContainer{width:100%;height:4px;background:#333;}
+			#progressBar{height:4px;width:0;background:#1181e4;transition:width 0.3s;}
+			main { flex:1; display:flex; min-height:0;}
+			#editorContainer, #previewContainer, #logContainer { flex:1; display:flex; flex-direction:column; overflow: auto;}
 			#editorContainer { max-width: 40vw; min-width: 380px; }
 			#previewContainer {
-  background: #fff;
-  border: 2px solid #222;
-  box-shadow: 0 3px 18px #0002;
-  border-radius: 8px;
-  overflow: hidden;
-  min-height: 600px;
-}
-#previewFrame {
-  width: 100%;
-  height: 600px;
-  background: #fff;
-  border: none;
-}
+				background: #fff;
+				border: 2px solid #222;
+				box-shadow: 0 3px 18px #0002;
+				border-radius: 8px;
+				overflow: hidden;
+				min-height: 600px;
+			}
+			#previewFrame {
+				width: 100%;
+				height: 600px;
+				background: #fff;
+				border: none;
+			}
 			#logContainer { max-width: 33vw; min-width: 350px; background: #181b20;}
 			#codeEditor { flex:1; width:100%; font-family:'JetBrains Mono',monospace; font-size:15px; background: #16191c; color:#e9e9e9; border:none; outline:none; padding:1rem;}
 			#debugLogList { flex:1; width:100%; background:#191b20; color:#b9e8ff; font-size:13px; font-family:monospace; border:none; padding:1rem; overflow:auto; }
@@ -54,45 +54,47 @@
 			#editorLabel, #previewLabel { padding:0.6rem 1rem 0.3rem 1rem; font-weight:bold; letter-spacing:1px; background:#22262c;}
 			#statusBar { background:#23272e; color:#6bd7ff; font-size:1rem; padding:0.5rem 1.1rem; border-top:1px solid #181b20; min-height:24px; }
 			#editorControls { display:flex; gap:1em; align-items:center; padding: 0.6em 1em; background:#23262c;}
-                        #editorControls button { background:#25477c; font-size:0.98em; padding:0.45em 1.15em;}
-                        .divider { width:5px; background:#444; cursor:col-resize; }
-                        body.dragging { user-select:none; }
-                        @media (max-width:1050px){ main{flex-direction:column;} #editorContainer,#previewContainer,#logContainer{max-width:100%;min-width:0;} .divider{display:none;}}
+			#editorControls button { background:#25477c; font-size:0.98em; padding:0.45em 1.15em;}
+			.divider { width:5px; background:#444; cursor:col-resize; }
+			body.dragging { user-select:none; }
+			@media (max-width:1050px){ main{flex-direction:column;} #editorContainer,#previewContainer,#logContainer{max-width:100%;min-width:0;} .divider{display:none;}}
 			.logEntry {margin-bottom:1.3em; border-bottom:1px solid #2226; padding-bottom:0.7em;}
 			.logEntry .stepName {color:#ffdf88; font-weight:600;}
 			.logEntry .juniorTip {color:#57eaff; font-size:0.98em; margin:0.22em 0 0.7em 0;}
 			.logEntry .logMsg.error {color:#ff5c77;}
 			.logEntry .logMsg.warn {color:#ffb854;}
 			.logEntry .logMsg {margin:0.13em 0;}
-                        .copyLogBtn, .downloadLogBtn { margin-right: 1em; background:#3e5799;}
-                        #diffPanel {background:#182330; color:#b1f1fc; font-family:monospace; padding:1em; font-size:13px; border-radius:7px; border:1px solid #193753; margin:1em;}
-                        #spinnerOverlay {
-                                position: fixed; top:0; left:0; right:0; bottom:0;
-                                background: rgba(0,0,0,0.4); display:none;
-                                align-items:center; justify-content:center;
-                                z-index:2000;
-                        }
-                        #spinnerOverlay .spinner {
-                                border:6px solid #ddd; border-top:6px solid #1181e4;
-                                border-radius:50%; width:50px; height:50px;
-                                animation: spin 1s linear infinite;
-                        }
-                        @keyframes spin { from{transform:rotate(0deg);} to{transform:rotate(360deg);} }
-
-                        #helpOverlay {
-                                position: fixed; top:0; left:0; right:0; bottom:0;
-                                background: rgba(0,0,0,0.6); display:none;
-                                align-items:center; justify-content:center;
-                                z-index:1500;
-                        }
-                        #helpOverlay .panel {
-                                background:#222; color:#eee; padding:20px;
-                                border-radius:8px; max-width:480px; line-height:1.4;
-                        }
-                        #helpOverlay .closeBtn { background:#ad2331; margin-top:1em; }
-                </style>
-                <!-- Use a local copy of html2canvas to avoid network issues -->
-                <script src="html2canvas.min.js"></script>
+			.copyLogBtn, .downloadLogBtn { margin-right: 1em; background:#3e5799;}
+			#diffPanel {background:#182330; color:#b1f1fc; font-family:monospace; padding:1em; font-size:13px; border-radius:7px; border:1px solid #193753; margin:1em;}
+			#spinnerOverlay {
+				position: fixed; top:0; left:0; right:0; bottom:0;
+				background: rgba(0,0,0,0.4); display:none;
+				align-items:center; justify-content:center;
+				z-index:2000;
+			}
+			#spinnerOverlay .spinner {
+				border:6px solid #ddd; border-top:6px solid #1181e4;
+				border-radius:50%; width:50px; height:50px;
+				animation: spin 1s linear infinite;
+			}
+			@keyframes spin { from{transform:rotate(0deg);} to{transform:rotate(360deg);} }
+			
+			#helpOverlay {
+				position: fixed; top:0; left:0; right:0; bottom:0;
+				background: rgba(0,0,0,0.6); display:none;
+				align-items:center; justify-content:center;
+				z-index:1500;
+			}
+			#helpOverlay .panel {
+				background:#222; color:#eee; padding:20px;
+				border-radius:8px; max-width:480px; line-height:1.4;
+			}
+			#helpOverlay .closeBtn { background:#ad2331; margin-top:1em; }
+		</style>
+		<script src="https://cdn.jsdelivr.net/npm/dom-to-image-more@latest/dist/dom-to-image-more.min.js"></script>
+		
+		
+		
 	</head>
 	<body>
 		<header>
@@ -101,13 +103,13 @@
 			<input id="goalInput" type="text" placeholder="Describe your goal (e.g. responsive gallery with dark mode, contact form...)" />
 			<button id="runAI">Start Auto</button>
 			<button id="stopAI" style="background:#ad2331;display:none;">Stop</button>
-                        <button id="settingsBtn" title="Settings" style="margin-left:6px;">⚙️</button>
-                        <button id="helpBtn" title="Help" style="margin-left:6px;">❔</button>
-                </header>
-                <div id="stepper"></div>
-                <div id="progressContainer"><div id="progressBar"></div></div>
-                <main>
-                        <div id="editorContainer">
+			<button id="settingsBtn" title="Settings" style="margin-left:6px;">⚙️</button>
+			<button id="helpBtn" title="Help" style="margin-left:6px;">❔</button>
+		</header>
+		<div id="stepper"></div>
+		<div id="progressContainer"><div id="progressBar"></div></div>
+		<main>
+			<div id="editorContainer">
 				<div id="editorControls">
 					<button id="copyHtmlBtn">Copy HTML</button>
 					<button id="downloadHtmlBtn">Download HTML</button>
@@ -116,34 +118,34 @@
 				<div id="editorLabel">Current HTML Code</div>
 				<textarea id="codeEditor" spellcheck="false" autocomplete="off"></textarea>
 				<div id="diffPanel" style="display:none;"></div>
-                        </div>
-                        <div class="divider"></div>
-                        <div id="previewContainer">
+			</div>
+			<div class="divider"></div>
+			<div id="previewContainer">
 				<div id="previewLabel">Live Preview</div>
-                                <iframe id="previewFrame" sandbox="allow-scripts allow-same-origin"></iframe>
-                        </div>
-                        <div class="divider"></div>
-                                <div id="logContainer">
-                                        <div id="logHeader" style="display:flex; align-items:center;">
-                                                <span style="flex:1;">AI Debug Log</span>
-                                                <button id="toggleLogBtn" style="margin-right:1em;">Hide Log</button>
-                                                <button class="copyLogBtn">Copy Log</button>
-                                                <button class="downloadLogBtn">Download Log</button>
-                                        </div>
-                                        <div id="screenshotPreview" style="display:none; padding:0.5rem; text-align:center; border-bottom:1px solid #222; background:#111;">
-                                                <img style="max-width:100%; max-height:160px; border:1px solid #555; border-radius:4px; cursor:pointer;" />
-                                        </div>
-                                        <div id="planBox" style="display:none; white-space:pre-wrap; background:#1b1e23; border-bottom:1px solid #222; padding:0.5rem; font-size:0.9em; color:#b6e6ff;"></div>
-                                        <div id="debugLogList"></div>
-                                </div>
+				<iframe id="previewFrame" sandbox="allow-scripts allow-same-origin"></iframe>
+			</div>
+			<div class="divider"></div>
+			<div id="logContainer">
+				<div id="logHeader" style="display:flex; align-items:center;">
+					<span style="flex:1;">AI Debug Log</span>
+					<button id="toggleLogBtn" style="margin-right:1em;">Hide Log</button>
+					<button class="copyLogBtn">Copy Log</button>
+					<button class="downloadLogBtn">Download Log</button>
+				</div>
+				<div id="screenshotPreview" style="display:none; padding:0.5rem; text-align:center; border-bottom:1px solid #222; background:#111;">
+					<img style="max-width:100%; max-height:160px; border:1px solid #555; border-radius:4px; cursor:pointer;" />
+				</div>
+				<div id="planBox" style="display:none; white-space:pre-wrap; background:#1b1e23; border-bottom:1px solid #222; padding:0.5rem; font-size:0.9em; color:#b6e6ff;"></div>
+				<div id="debugLogList"></div>
+			</div>
 		</main>
-                <div id="statusBar">Ready.</div>
-                <div id="screenshotModal" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:#000a; align-items:center; justify-content:center; z-index:1000;">
-                        <img style="max-width:90vw; max-height:90vh; border:2px solid #aaa; border-radius:6px;" />
-                </div>
-                <div id="spinnerOverlay"><div class="spinner"></div></div>
-                <div id="settingsPanel">
-                        <div class="row" style="justify-content:space-between;">
+		<div id="statusBar">Ready.</div>
+		<div id="screenshotModal" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:#000a; align-items:center; justify-content:center; z-index:1000;">
+			<img style="max-width:90vw; max-height:90vh; border:2px solid #aaa; border-radius:6px;" />
+		</div>
+		<div id="spinnerOverlay"><div class="spinner"></div></div>
+		<div id="settingsPanel">
+			<div class="row" style="justify-content:space-between;">
 				<b style="font-size:1.14em;">⚙️ Settings</b>
 				<button class="closeBtn">Close</button>
 			</div>
@@ -159,23 +161,25 @@
 				<label><input id="juniorMode" type="checkbox" /> Junior Mode (show tips)</label>
 			</div>
 			<div class="row">
-                        <label><input id="logDetail" type="checkbox" checked /> Show full prompt/response in log</label>
-                        </div>
-                </div>
-                <div id="helpOverlay">
-                        <div class="panel">
-                                <b style="font-size:1.14em;">❔ Help</b>
-                                <p>Live preview sanitizes the HTML before rendering. Tags like &lt;script&gt;, &lt;iframe&gt;, &lt;object&gt; and &lt;embed&gt; are stripped. Styles using <code>position:fixed</code> are converted to <code>absolute</code> and <code>z-index</code> values above 100 are lowered.</p>
-                                <p style="margin-top:0.7em;"><b>Examples:</b></p>
-                                <ul style="margin-top:0;margin-bottom:0.7em;padding-left:1.2em;">
-                                        <li>Landing page with hero image and newsletter sign-up</li>
-                                        <li>Responsive photo gallery with dark mode</li>
-                                        <li>Simple portfolio with about section and contact form</li>
-                                </ul>
-                                <button class="closeBtn">Close</button>
-                        </div>
-                </div>
-                <script>
+				<label><input id="logDetail" type="checkbox" checked /> Show full prompt/response in log</label>
+			</div>
+		</div>
+		<div id="helpOverlay">
+			<div class="panel">
+				<b style="font-size:1.14em;">❔ Help</b>
+				<p>Live preview sanitizes the HTML before rendering. Tags like &lt;script&gt;, &lt;iframe&gt;, &lt;object&gt; and &lt;embed&gt; are stripped. Styles using <code>position:fixed</code> are converted to <code>absolute</code> and <code>z-index</code> values above 100 are lowered.</p>
+				<p style="margin-top:0.7em;"><b>Examples:</b></p>
+				<ul style="margin-top:0;margin-bottom:0.7em;padding-left:1.2em;">
+					<li>Landing page with hero image and newsletter sign-up</li>
+					<li>Responsive photo gallery with dark mode</li>
+					<li>Simple portfolio with about section and contact form</li>
+				</ul>
+				<button class="closeBtn">Close</button>
+			</div>
+		</div>
+		<div id="hiddenPreview" style="position:fixed;left:-9999px;top:-9999px;width:1200px;height:auto;z-index:-1;pointer-events:none;"></div>
+		
+		<script>
 			const editor = document.getElementById('codeEditor');
 			const preview = document.getElementById('previewFrame');
 			const runAI = document.getElementById('runAI');
@@ -183,78 +187,78 @@
 			const statusBar = document.getElementById('statusBar');
 			const goalInput = document.getElementById('goalInput');
 			const apiKeyInput = document.getElementById('apiKey');
-                        const settingsBtn = document.getElementById('settingsBtn');
-                        const settingsPanel = document.getElementById('settingsPanel');
-                        const helpBtn = document.getElementById('helpBtn');
-                        const helpOverlay = document.getElementById('helpOverlay');
+			const settingsBtn = document.getElementById('settingsBtn');
+			const settingsPanel = document.getElementById('settingsPanel');
+			const helpBtn = document.getElementById('helpBtn');
+			const helpOverlay = document.getElementById('helpOverlay');
 			const maxIterationsInput = document.getElementById('maxIterations');
 			const agentDelayInput = document.getElementById('agentDelay');
 			const juniorModeInput = document.getElementById('juniorMode');
 			const logDetailInput = document.getElementById('logDetail');
 			const debugLogList = document.getElementById('debugLogList');
 			const copyHtmlBtn = document.getElementById('copyHtmlBtn');
-                        const downloadHtmlBtn = document.getElementById('downloadHtmlBtn');
-                        const toggleDiffBtn = document.getElementById('toggleDiffBtn');
-                        const diffPanel = document.getElementById('diffPanel');
-                        const stepper = document.getElementById('stepper');
-                        const progressBar = document.getElementById('progressBar');
-                        const logContainer = document.getElementById('logContainer');
-                        const toggleLogBtn = document.getElementById('toggleLogBtn');
-                        const copyLogBtn = document.querySelector('.copyLogBtn');
-                        const downloadLogBtn = document.querySelector('.downloadLogBtn');
-                        const screenshotPreview = document.getElementById('screenshotPreview');
-                        const screenshotImg = screenshotPreview.querySelector('img');
-                        const screenshotModal = document.getElementById('screenshotModal');
-const screenshotModalImg = screenshotModal.querySelector('img');
-const spinnerOverlay = document.getElementById('spinnerOverlay');
-const planBox = document.getElementById('planBox');
-const dividers = document.querySelectorAll('.divider');
-function showSpinner(show){ spinnerOverlay.style.display = show ? 'flex' : 'none'; }
-                        dividers.forEach(d=>{
-                                d.addEventListener('mousedown', e=>initDrag(e, d));
-                        });
-                        let logCollapsed = window.sessionStorage.getItem('LOG_COLLAPSED') === 'true';
-                        function updateLogVisibility(){
-                                if(logCollapsed){
-                                        logContainer.style.display='none';
-                                        let dv = logContainer.previousElementSibling;
-                                        if(dv && dv.classList.contains('divider')) dv.style.display='none';
-                                        toggleLogBtn.textContent='Show Log';
-                                }else{
-                                        logContainer.style.display='';
-                                        let dv = logContainer.previousElementSibling;
-                                        if(dv && dv.classList.contains('divider')) dv.style.display='';
-                                        toggleLogBtn.textContent='Hide Log';
-                                }
-                        }
-                        updateLogVisibility();
-                        toggleLogBtn.onclick = ()=>{
-                                logCollapsed = !logCollapsed;
-                                window.sessionStorage.setItem('LOG_COLLAPSED', logCollapsed);
-                                updateLogVisibility();
-                        };
-                        function initDrag(e, divider){
-                                e.preventDefault();
-                                const prev = divider.previousElementSibling;
-                                const next = divider.nextElementSibling;
-                                const startX = e.clientX;
-                                const prevWidth = prev.getBoundingClientRect().width;
-                                const nextWidth = next.getBoundingClientRect().width;
-                                document.body.classList.add('dragging');
-                                function onMove(ev){
-                                        const dx = ev.clientX - startX;
-                                        prev.style.flex = `0 0 ${prevWidth + dx}px`;
-                                        next.style.flex = `0 0 ${nextWidth - dx}px`;
-                                }
-                                function onUp(){
-                                        document.removeEventListener('mousemove', onMove);
-                                        document.removeEventListener('mouseup', onUp);
-                                        document.body.classList.remove('dragging');
-                                }
-                                document.addEventListener('mousemove', onMove);
-                                document.addEventListener('mouseup', onUp);
-                        }
-                        let stopped = false, running = false;
+			const downloadHtmlBtn = document.getElementById('downloadHtmlBtn');
+			const toggleDiffBtn = document.getElementById('toggleDiffBtn');
+			const diffPanel = document.getElementById('diffPanel');
+			const stepper = document.getElementById('stepper');
+			const progressBar = document.getElementById('progressBar');
+			const logContainer = document.getElementById('logContainer');
+			const toggleLogBtn = document.getElementById('toggleLogBtn');
+			const copyLogBtn = document.querySelector('.copyLogBtn');
+			const downloadLogBtn = document.querySelector('.downloadLogBtn');
+			const screenshotPreview = document.getElementById('screenshotPreview');
+			const screenshotImg = screenshotPreview.querySelector('img');
+			const screenshotModal = document.getElementById('screenshotModal');
+			const screenshotModalImg = screenshotModal.querySelector('img');
+			const spinnerOverlay = document.getElementById('spinnerOverlay');
+			const planBox = document.getElementById('planBox');
+			const dividers = document.querySelectorAll('.divider');
+			function showSpinner(show){ spinnerOverlay.style.display = show ? 'flex' : 'none'; }
+			dividers.forEach(d=>{
+				d.addEventListener('mousedown', e=>initDrag(e, d));
+			});
+			let logCollapsed = window.sessionStorage.getItem('LOG_COLLAPSED') === 'true';
+			function updateLogVisibility(){
+				if(logCollapsed){
+					logContainer.style.display='none';
+					let dv = logContainer.previousElementSibling;
+					if(dv && dv.classList.contains('divider')) dv.style.display='none';
+					toggleLogBtn.textContent='Show Log';
+				}else{
+					logContainer.style.display='';
+					let dv = logContainer.previousElementSibling;
+					if(dv && dv.classList.contains('divider')) dv.style.display='';
+					toggleLogBtn.textContent='Hide Log';
+				}
+			}
+			updateLogVisibility();
+			toggleLogBtn.onclick = ()=>{
+				logCollapsed = !logCollapsed;
+				window.sessionStorage.setItem('LOG_COLLAPSED', logCollapsed);
+				updateLogVisibility();
+			};
+			function initDrag(e, divider){
+				e.preventDefault();
+				const prev = divider.previousElementSibling;
+				const next = divider.nextElementSibling;
+				const startX = e.clientX;
+				const prevWidth = prev.getBoundingClientRect().width;
+				const nextWidth = next.getBoundingClientRect().width;
+				document.body.classList.add('dragging');
+				function onMove(ev){
+					const dx = ev.clientX - startX;
+					prev.style.flex = `0 0 ${prevWidth + dx}px`;
+					next.style.flex = `0 0 ${nextWidth - dx}px`;
+				}
+				function onUp(){
+					document.removeEventListener('mousemove', onMove);
+					document.removeEventListener('mouseup', onUp);
+					document.body.classList.remove('dragging');
+				}
+				document.addEventListener('mousemove', onMove);
+				document.addEventListener('mouseup', onUp);
+			}
+			let stopped = false, running = false;
 			let lastDiff = '', lastStepIndex = 0;
 			let logEntries = [];
 			const pipelineSteps = [
@@ -267,82 +271,82 @@ function showSpinner(show){ spinnerOverlay.style.display = show ? 'flex' : 'none
 				window.sessionStorage.setItem('OPENAI_API_KEY', apiKeyInput.value);
 			});
 			
-function sanitizePreviewHtml(html) {
-                                // Strip potentially dangerous tags
-                                html = html.replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '')
-                                           .replace(/<iframe[^>]*>[\s\S]*?<\/iframe>/gi, '')
-                                           .replace(/<object[^>]*>[\s\S]*?<\/object>/gi, '')
-                                           .replace(/<embed[^>]*>[\s\S]*?<\/embed>/gi, '');
-                                // Remove z-indexes above a certain value and position:fixed styles
-        return html.replace(/z-index\s*:\s*\d{4,};?/gi, 'z-index:100;')
-                .replace(/position\s*:\s*fixed;?/gi, 'position:absolute;');
-}
-
-                        // Parse inline style text and keep only declarations
-                        // that the browser accepts. Invalid properties or
-                        // values are dropped.
-                        function sanitizeStyleText(styleStr){
-                                const tmp = document.createElement('div');
-                                const valid = [];
-                                styleStr.split(';').forEach(pair=>{
-                                        pair = pair.trim();
-                                        if(!pair) return;
-                                        try{
-                                                tmp.style.cssText = '';
-                                                tmp.style.cssText = pair;
-                                                if(tmp.style.length > 0){
-                                                        valid.push(tmp.style.cssText.trim());
-                                                }
-                                        }catch(e){
-                                                /* ignore invalid declarations */
-                                        }
-                                });
-                                return valid.join(';');
-                        }
+			function sanitizePreviewHtml(html) {
+				// Strip potentially dangerous tags
+				html = html.replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '')
+				.replace(/<iframe[^>]*>[\s\S]*?<\/iframe>/gi, '')
+				.replace(/<object[^>]*>[\s\S]*?<\/object>/gi, '')
+				.replace(/<embed[^>]*>[\s\S]*?<\/embed>/gi, '');
+				// Remove z-indexes above a certain value and position:fixed styles
+				return html.replace(/z-index\s*:\s*\d{4,};?/gi, 'z-index:100;')
+				.replace(/position\s*:\s*fixed;?/gi, 'position:absolute;');
+			}
 			
-			// Update this in your code:
+			function sanitizeStyleText(styleStr) {
+				const tmp = document.createElement('div');
+				const valid = [];
+				styleStr.split(';').forEach(pair => {
+					pair = pair.trim();
+					if (!pair) return;
+					try {
+						tmp.style.cssText = '';
+						tmp.style.cssText = pair;
+						if (tmp.style.length > 0) {
+							// 过滤掉末尾缺失的冒号或分号导致的异常
+							if (/:\s*[^;]+$/.test(pair)) { // 简单检查pair是否基本完整
+								valid.push(tmp.style.cssText.trim());
+							}
+						}
+					} catch (e) {
+						// 忽略无效声明
+					}
+				});
+				return valid.join('; ');
+			}
+			
+			
 			function updatePreview(html) {
 				preview.srcdoc = sanitizePreviewHtml(html);
 			}
 			editor.addEventListener('input', ()=>updatePreview(editor.value));
 			
 			// Settings panel show/hide
-                        settingsBtn.onclick = ()=>{ settingsPanel.style.display = 'flex'; }
-                        settingsPanel.querySelector('.closeBtn').onclick = ()=>{ settingsPanel.style.display = 'none'; }
-                        window.addEventListener('keydown', e=>{
-                                if(settingsPanel.style.display === 'flex' && e.key==='Escape') settingsPanel.style.display='none';
-                        });
-                        helpBtn.onclick = ()=>{ helpOverlay.style.display = 'flex'; }
-                        helpOverlay.querySelector('.closeBtn').onclick = ()=>{ helpOverlay.style.display = 'none'; }
-                        window.addEventListener('keydown', e=>{
-                                if(helpOverlay.style.display === 'flex' && e.key==='Escape') helpOverlay.style.display='none';
-                        });
+			settingsBtn.onclick = ()=>{ settingsPanel.style.display = 'flex'; }
+			settingsPanel.querySelector('.closeBtn').onclick = ()=>{ settingsPanel.style.display = 'none'; }
+			window.addEventListener('keydown', e=>{
+				if(settingsPanel.style.display === 'flex' && e.key==='Escape') settingsPanel.style.display='none';
+			});
+			helpBtn.onclick = ()=>{ helpOverlay.style.display = 'flex'; }
+			helpOverlay.querySelector('.closeBtn').onclick = ()=>{ helpOverlay.style.display = 'none'; }
+			window.addEventListener('keydown', e=>{
+				if(helpOverlay.style.display === 'flex' && e.key==='Escape') helpOverlay.style.display='none';
+			});
 			
 			// Pipeline stepper UI
-                       function updateStepper(currentStepIdx, iteration=1, maxIterations=1, errorStepIdx=-1){
-                               stepper.innerHTML = '';
-                               pipelineSteps.forEach((step, i)=>{
-                                       let cls = 'step' + (i === currentStepIdx ? ' active' : '') + (i < currentStepIdx ? ' done':'') + (i === errorStepIdx ? ' error':'');
-                                       const stepDiv = document.createElement('div');
-                                       stepDiv.className = cls;
-                                       // show iter count for iterative steps
-                                       if(i>=2 && i<=6){
-                                               stepDiv.innerText = `${step} (${iteration}/${maxIterations})`;
-                                       }else{
-                                               stepDiv.innerText = step;
-                                       }
-                                       stepper.appendChild(stepDiv);
-                               });
-                               let iterProgress = iteration - 1;
-                               let stepProgress = 0;
-                               if(currentStepIdx>=2 && currentStepIdx<=6){
-                                       stepProgress = (currentStepIdx - 1) / 5;
-                               }else if(currentStepIdx>=7){
-                                       stepProgress = 1;
-                               }
-                               const totalProgress = (iterProgress + stepProgress) / maxIterations;
-                               progressBar.style.width = `${Math.min(totalProgress,1)*100}%`;
-                       }
+			function updateStepper(currentStepIdx, iteration=1, maxIterations=1, errorStepIdx=-1){
+				stepper.innerHTML = '';
+				pipelineSteps.forEach((step, i)=>{
+					let cls = 'step' + (i === currentStepIdx ? ' active' : '') + (i < currentStepIdx ? ' done':'') + (i === errorStepIdx ? ' error':'');
+					const stepDiv = document.createElement('div');
+					stepDiv.className = cls;
+					// show iter count for iterative steps
+					if(i>=2 && i<=6){
+						stepDiv.innerText = `${step} (${iteration}/${maxIterations})`;
+					}else{
+						stepDiv.innerText = step;
+					}
+					stepper.appendChild(stepDiv);
+				});
+				let iterProgress = iteration - 1;
+				let stepProgress = 0;
+				if(currentStepIdx>=2 && currentStepIdx<=6){
+					stepProgress = (currentStepIdx - 1) / 5;
+				}else if(currentStepIdx>=7){
+					stepProgress = 1;
+				}
+				const totalProgress = (iterProgress + stepProgress) / maxIterations;
+				progressBar.style.width = `${Math.min(totalProgress,1)*100}%`;
+			}
 			
 			// Debug log panel upgrade
 			function log(step, msg, obj, options={}){
@@ -358,8 +362,8 @@ function sanitizePreviewHtml(html) {
 				<div class="${msgClass}">${msg.replaceAll('\n','<br>')}</div>
 				${tip}
 				${(logDetailInput.checked && obj)?
-    '<pre style="margin:0.7em 0 0.2em 0;">'+escapeHtml(typeof obj==="string"?obj:JSON.stringify(obj,null,2))+'</pre>'
-    :''}
+					'<pre style="margin:0.7em 0 0.2em 0;">'+escapeHtml(typeof obj==="string"?obj:JSON.stringify(obj,null,2))+'</pre>'
+				:''}
 				`;
 				entry.innerHTML = fullLog;
 				debugLogList.appendChild(entry);
@@ -392,21 +396,21 @@ function sanitizePreviewHtml(html) {
 				const plain = logEntries.map(e=>`[${e.step}] ${e.msg}${e.obj ? '\n' + (typeof e.obj==="string"?e.obj:JSON.stringify(e.obj,null,2)) : ""}`).join('\n\n');
 				navigator.clipboard.writeText(plain);
 			};
-                        downloadLogBtn.onclick = ()=>{
-                                const plain = logEntries.map(e=>`[${e.step}] ${e.msg}${e.obj ? '\n' + (typeof e.obj==="string"?e.obj:JSON.stringify(e.obj,null,2)) : ""}`).join('\n\n');
-                                const blob = new Blob([plain],{type:"text/plain"});
-                                const a = document.createElement("a");
-                                a.href = URL.createObjectURL(blob);
-                                a.download = "ai_debug_log.txt"; a.click();
-                        };
-
-                        screenshotImg.onclick = ()=>{
-                                screenshotModalImg.src = screenshotImg.src;
-                                screenshotModal.style.display = 'flex';
-                        };
-                        screenshotModal.onclick = ()=>{
-                                screenshotModal.style.display = 'none';
-                        };
+			downloadLogBtn.onclick = ()=>{
+				const plain = logEntries.map(e=>`[${e.step}] ${e.msg}${e.obj ? '\n' + (typeof e.obj==="string"?e.obj:JSON.stringify(e.obj,null,2)) : ""}`).join('\n\n');
+				const blob = new Blob([plain],{type:"text/plain"});
+				const a = document.createElement("a");
+				a.href = URL.createObjectURL(blob);
+				a.download = "ai_debug_log.txt"; a.click();
+			};
+			
+			screenshotImg.onclick = ()=>{
+				screenshotModalImg.src = screenshotImg.src;
+				screenshotModal.style.display = 'flex';
+			};
+			screenshotModal.onclick = ()=>{
+				screenshotModal.style.display = 'none';
+			};
 			
 			// Diff view
 			toggleDiffBtn.onclick = ()=>{
@@ -418,6 +422,7 @@ function sanitizePreviewHtml(html) {
 				}
 			};
 			
+            
 			// Initial HTML
 			editor.value = `<!DOCTYPE html>
 			<html lang="en">
@@ -435,18 +440,19 @@ function sanitizePreviewHtml(html) {
 					<p>Type a goal above and run auto. The AI will keep improving this page until your goal is met!</p>
 				</body>
 			</html>`;
+			
 			updatePreview(editor.value);
 			
 			// ---- MULTI-AGENT PIPELINE ----
 			runAI.onclick = async function(){
 				stopped = false; running = true;
 				runAI.disabled = true; stopAI.style.display = '';
-                                statusBar.textContent = "Pipeline starting...";
-                                debugLogList.innerHTML = ""; logEntries = [];
-                                screenshotPreview.style.display = 'none';
-                                screenshotImg.src = '';
-                                screenshotModal.style.display = 'none';
-                                let apiKey = apiKeyInput.value.trim();
+				statusBar.textContent = "Pipeline starting...";
+				debugLogList.innerHTML = ""; logEntries = [];
+				screenshotPreview.style.display = 'none';
+				screenshotImg.src = '';
+				screenshotModal.style.display = 'none';
+				let apiKey = apiKeyInput.value.trim();
 				if (!apiKey || !apiKey.startsWith('sk-')) {
 					alert("Please enter a valid OpenAI API key.");
 					apiKeyInput.focus(); runAI.disabled = false; stopAI.style.display = 'none';
@@ -458,31 +464,31 @@ function sanitizePreviewHtml(html) {
 					goalInput.focus(); runAI.disabled = false; stopAI.style.display = 'none';
 					return;
 				}
-                                 let code = editor.value, iteration = 0, done = false, lastVisual = "";
-                                 let maxIterations = +maxIterationsInput.value || 30;
-                                 let agentDelay = +agentDelayInput.value || 600;
-                                 let juniorMode = juniorModeInput.checked;
-                                 let unresolvedErrors = {};
-                                 updateStepper(0, 1, maxIterations);
+				let code = editor.value, iteration = 0, done = false, lastVisual = "";
+				let maxIterations = +maxIterationsInput.value || 30;
+				let agentDelay = +agentDelayInput.value || 600;
+				let juniorMode = juniorModeInput.checked;
+				let unresolvedErrors = {};
+				updateStepper(0, 1, maxIterations);
 				
 				// AGENT: Understand user intent
-                                statusBar.textContent = "1/8: Understanding goal...";
-                                updateStepper(0, 1, maxIterations);
+				statusBar.textContent = "1/8: Understanding goal...";
+				updateStepper(0, 1, maxIterations);
 				let intent = await callAgent(apiKey, "Understand", userGoal);
 				log("Understand", "Intent: "+intent);
 				
 				// AGENT: Plan UI/components
-                                statusBar.textContent = "2/8: Planning UI...";
-                                updateStepper(1, 1, maxIterations);
-                                let plan = await callAgent(apiKey, "Plan", intent);
-                                log("Plan", "UI Plan:\n"+plan);
-                                planBox.textContent = plan;
-                                planBox.style.display = 'block';
+				statusBar.textContent = "2/8: Planning UI...";
+				updateStepper(1, 1, maxIterations);
+				let plan = await callAgent(apiKey, "Plan", intent);
+				log("Plan", "UI Plan:\n"+plan);
+				planBox.textContent = plan;
+				planBox.style.display = 'block';
 				
 				while (!done && iteration < maxIterations && !stopped) {
 					iteration++;
-                                        statusBar.textContent = `Iter ${iteration}/${maxIterations}: Generating code...`;
-                                        updateStepper(2, iteration, maxIterations);
+					statusBar.textContent = `Iter ${iteration}/${maxIterations}: Generating code...`;
+					updateStepper(2, iteration, maxIterations);
 					
 					let prevCode = code;
 					code = await callAgent(apiKey, "Generate", plan, code);
@@ -492,78 +498,78 @@ function sanitizePreviewHtml(html) {
 					editor.value = code; updatePreview(code);
 					
 					// AGENT: Debug (text)
-                                        statusBar.textContent = `Iter ${iteration}/${maxIterations}: Debugging...`;
-                                        updateStepper(3, iteration, maxIterations);
-                                         let errors = await captureIframeConsoleErrors();
-                                         log("Debug", errors?("Errors:\n"+errors):"No runtime errors found.");
-
-                                         let currentList = errors ? errors.split('\n').filter(e=>e.trim()) : [];
-                                         currentList.forEach(err=>{
-                                                 unresolvedErrors[err] = (unresolvedErrors[err]||0)+1;
-                                         });
-                                         for(let err in unresolvedErrors){
-                                                 if(!currentList.includes(err)) delete unresolvedErrors[err];
-                                         }
-                                         let errorSummary = Object.entries(unresolvedErrors)
-                                                 .map(([e,c])=> c>1?`${e} (x${c})`:e)
-                                                 .join('\n');
-
-                                         let debugged = await callAgent(apiKey, "Debug", code, errorSummary);
-                                         code = debugged; editor.value = code; updatePreview(code);
+					statusBar.textContent = `Iter ${iteration}/${maxIterations}: Debugging...`;
+					updateStepper(3, iteration, maxIterations);
+					let errors = await captureIframeConsoleErrors();
+					log("Debug", errors?("Errors:\n"+errors):"No runtime errors found.");
+					
+					let currentList = errors ? errors.split('\n').filter(e=>e.trim()) : [];
+					currentList.forEach(err=>{
+						unresolvedErrors[err] = (unresolvedErrors[err]||0)+1;
+					});
+					for(let err in unresolvedErrors){
+						if(!currentList.includes(err)) delete unresolvedErrors[err];
+					}
+					let errorSummary = Object.entries(unresolvedErrors)
+					.map(([e,c])=> c>1?`${e} (x${c})`:e)
+					.join('\n');
+					
+					let debugged = await callAgent(apiKey, "Debug", code, errorSummary);
+					code = debugged; editor.value = code; updatePreview(code);
 					
 					// AGENT: Visual Debug
-                                        statusBar.textContent = `Iter ${iteration}/${maxIterations}: Visual Debug...`;
-                                        updateStepper(4, iteration, maxIterations);
-                                        let screenshot = await captureIframeScreenshot();
-                                        if(screenshot){
-                                                screenshotImg.src = screenshot;
-                                                screenshotPreview.style.display = 'block';
-                                        }
-                                         let visual = await callVisualAgent(apiKey, "Visual Debug", code, errorSummary, screenshot);
-                                        log("Visual Debug", "Visual check: "+(visual.status||visual.message||"-"));
-                                        if (visual.code && visual.code.toLowerCase().includes("<html"))
-                                        code = visual.code;
-                                        editor.value = code; updatePreview(code);
-
-                                        // AGENT: Reflect/Check Goal (uses code updated above)
-                                        statusBar.textContent = `Iter ${iteration}/${maxIterations}: Reflecting on goal...`;
-                                        updateStepper(5, iteration, maxIterations);
+					statusBar.textContent = `Iter ${iteration}/${maxIterations}: Visual Debug...`;
+					updateStepper(4, iteration, maxIterations);
+					let screenshot = await captureIframeScreenshot();
+					if(screenshot){
+						screenshotImg.src = screenshot;
+						screenshotPreview.style.display = 'block';
+					}
+					let visual = await callVisualAgent(apiKey, "Visual Debug", code, errorSummary, screenshot);
+					log("Visual Debug", "Visual check: "+(visual.status||visual.message||"-"));
+					if (visual.code && visual.code.toLowerCase().includes("<html"))
+					code = visual.code;
+					editor.value = code; updatePreview(code);
+					
+					// AGENT: Reflect/Check Goal (uses code updated above)
+					statusBar.textContent = `Iter ${iteration}/${maxIterations}: Reflecting on goal...`;
+					updateStepper(5, iteration, maxIterations);
 					let reflection = await callAgent(apiKey, "Reflect", goalInput.value, code);
 					log("Reflect", reflection);
 					if ((reflection||"").toLowerCase().includes("yes") || (visual.status||"").toLowerCase().includes("done")) {
 						done = true;
 						log("DONE", "Goal confirmed by reflect agent.");
-                                                statusBar.textContent = `Goal achieved (confirmed) in ${iteration} iterations!`;
-                                                updateStepper(6, iteration, maxIterations);
+						statusBar.textContent = `Goal achieved (confirmed) in ${iteration} iterations!`;
+						updateStepper(6, iteration, maxIterations);
 						break;
 					}
 					if ((visual.status||"").toLowerCase().includes("done") || (visual.message||"").toLowerCase().includes("goal achieved")) {
 						done = true; log("DONE", "Goal achieved by visual agent.");
-                                                statusBar.textContent = `Goal achieved in ${iteration} iterations!`;
-                                                updateStepper(6, iteration, maxIterations);
+						statusBar.textContent = `Goal achieved in ${iteration} iterations!`;
+						updateStepper(6, iteration, maxIterations);
 						break;
 					}
 					// AGENT: Improve code
-                                        statusBar.textContent = `Iter ${iteration}/${maxIterations}: Improving...`;
-                                        updateStepper(6, iteration, maxIterations);
-                                        code = await callAgent(apiKey, "Improve", code, plan);
+					statusBar.textContent = `Iter ${iteration}/${maxIterations}: Improving...`;
+					updateStepper(6, iteration, maxIterations);
+					code = await callAgent(apiKey, "Improve", code, plan);
 					log("Improve", "Improved.");
 					editor.value = code; updatePreview(code);
 					
 					await sleep(agentDelay);
 				}
 				// AGENT: Finalize code
-                                statusBar.textContent = "Finalizing...";
-                                updateStepper(7, iteration, maxIterations);
-                                code = await callAgent(apiKey, "Finalize", code, plan);
+				statusBar.textContent = "Finalizing...";
+				updateStepper(7, iteration, maxIterations);
+				code = await callAgent(apiKey, "Finalize", code, plan);
 				editor.value = code; updatePreview(code);
-                                log("Finalize", "Final HTML produced.");
-                                progressBar.style.width = '100%';
-                                statusBar.textContent = done ? "Auto-run complete! Goal achieved." : "Stopped or max iterations reached.";
-                                runAI.disabled = false; stopAI.style.display = 'none'; running = false;
-                        };
+				log("Finalize", "Final HTML produced.");
+				progressBar.style.width = '100%';
+				statusBar.textContent = done ? "Auto-run complete! Goal achieved." : "Stopped or max iterations reached.";
+				runAI.disabled = false; stopAI.style.display = 'none'; running = false;
+			};
 			
-                        stopAI.onclick = ()=>{ stopped=true; statusBar.textContent="Stopped by user."; stopAI.style.display='none'; runAI.disabled=false; screenshotPreview.style.display='none'; screenshotModal.style.display='none'; };
+			stopAI.onclick = ()=>{ stopped=true; statusBar.textContent="Stopped by user."; stopAI.style.display='none'; runAI.disabled=false; screenshotPreview.style.display='none'; screenshotModal.style.display='none'; };
 			
 			function sleep(ms){ return new Promise(r=>setTimeout(r,ms)); }
 			
@@ -588,25 +594,25 @@ function sanitizePreviewHtml(html) {
 					Only output full HTML, no explanations.`;
 					case "Debug":
 					return `Review this HTML/CSS/JS code:\n${input1}\nDetected runtime errors:\n${input2||"None"}\nFix all issues. Output only corrected code.`;
-                                        case "Improve":
-                                        return `UI plan:\n${input2}\n\nOptimize this HTML/CSS/JS for readability, speed, accessibility, and responsiveness:\n${input1}\nOutput only the improved HTML.`;
-                                        case "Finalize":
-                                        return `UI plan:\n${input2}\n\nClean up and finalize this HTML code for production with best practices and comments:\n${input1}\nOutput only the final code.`;
-                                        default: return input1||"";
-                                }
-                        }
-            function escapeHtml(str) {
-	return str.replace(/[&<>"']/g, function(m) {
-		switch (m) {
-			case "&": return "&amp;";
-			case "<": return "&lt;";
-			case ">": return "&gt;";
-			case '"': return "&quot;";
-			case "'": return "&#39;";
-		}
-	});
-}
-
+					case "Improve":
+					return `UI plan:\n${input2}\n\nOptimize this HTML/CSS/JS for readability, speed, accessibility, and responsiveness:\n${input1}\nOutput only the improved HTML.`;
+					case "Finalize":
+					return `UI plan:\n${input2}\n\nClean up and finalize this HTML code for production with best practices and comments:\n${input1}\nOutput only the final code.`;
+					default: return input1||"";
+				}
+			}
+			function escapeHtml(str) {
+				return str.replace(/[&<>"']/g, function(m) {
+					switch (m) {
+						case "&": return "&amp;";
+						case "<": return "&lt;";
+						case ">": return "&gt;";
+						case '"': return "&quot;";
+						case "'": return "&#39;";
+					}
+				});
+			}
+			
 			function simpleDiff(before, after) {
 				if (before === after) return "";
 				let b = before.split('\n'), a = after.split('\n');
@@ -616,148 +622,144 @@ function sanitizePreviewHtml(html) {
 				}
 				return diff.join('\n');
 			}
-                        async function callAgent(apiKey, agent, input1, input2){
-                                let prompt = agentPrompt(agent, input1, input2);
-                                if(logDetailInput.checked) log(agent, "Prompt:", prompt);
-                                showSpinner(true);
-                                try {
-                                let res = await fetch("https://api.openai.com/v1/chat/completions",{
-                                        method:"POST",
-                                        headers:{"Authorization":`Bearer ${apiKey}`,"Content-Type":"application/json"},
-                                        body: JSON.stringify({
-                                                model:"gpt-4.1-nano",
-                                                messages:[
-							{role:"system", content:`You are the "${agent}" AI agent for web UI development. Be concise and act as instructed.`},
-							{role:"user", content: prompt}
-						],
-						temperature: agent==="Generate"?0.3:0.55, max_tokens: 6666
-					})
-				});
-                                let data = await res.json();
-                                if (!res.ok || !data.choices || !data.choices[0]) {
-                                        log(agent, JSON.stringify(data), null, {error:true});
-                                        let errMsg = data.error?.message || "OpenAI API Error";
-                                        log(agent, `ERROR: ${errMsg}`, null, {error:true});
-                                        statusBar.textContent = `Error from OpenAI: ${errMsg}`;
-                                        throw new Error(errMsg);
-                                }
-                                let aiContent = data.choices[0].message.content.trim();
-                                aiContent = stripCodeFences(aiContent);
-                                if(logDetailInput.checked) log(agent, "AI Response:", aiContent);
-                                return aiContent;
-                                } finally { showSpinner(false); }
-                        }
+			async function callAgent(apiKey, agent, input1, input2){
+				let prompt = agentPrompt(agent, input1, input2);
+				if(logDetailInput.checked) log(agent, "Prompt:", prompt);
+				showSpinner(true);
+				try {
+					let res = await fetch("https://api.openai.com/v1/chat/completions",{
+						method:"POST",
+						headers:{"Authorization":`Bearer ${apiKey}`,"Content-Type":"application/json"},
+						body: JSON.stringify({
+							model:"gpt-4.1-nano",
+							messages:[
+								{role:"system", content:`You are the "${agent}" AI agent for web UI development. Be concise and act as instructed.`},
+								{role:"user", content: prompt}
+							],
+							temperature: agent==="Generate"?0.3:0.55, max_tokens: 6666
+						})
+					});
+					let data = await res.json();
+					if (!res.ok || !data.choices || !data.choices[0]) {
+						log(agent, JSON.stringify(data), null, {error:true});
+						let errMsg = data.error?.message || "OpenAI API Error";
+						log(agent, `ERROR: ${errMsg}`, null, {error:true});
+						statusBar.textContent = `Error from OpenAI: ${errMsg}`;
+						throw new Error(errMsg);
+					}
+					let aiContent = data.choices[0].message.content.trim();
+					aiContent = stripCodeFences(aiContent);
+					if(logDetailInput.checked) log(agent, "AI Response:", aiContent);
+					return aiContent;
+				} finally { showSpinner(false); }
+			}
 			// ----------- VISUAL AGENT -----------
-                        async function callVisualAgent(apiKey, agent, code, errors, base64Image){
-                                if(!base64Image)return{status:"No screenshot",message:"No screenshot",code};
-                                showSpinner(true);
-                                try{
-                                let messages=[
-                                        {role:"system", content:"You are the Visual Debug AI agent. Analyze the provided web page screenshot, errors, and HTML code. Suggest or directly fix visual bugs. Respond only with a JSON object: { \"status\": \"<done|continue|error>\", \"message\": \"...\", \"code\": \"<optional HTML>\" }. Use short notes in the `message` field for any remaining issues. Put the fixed HTML in the `code` field when modifications are needed."},
-                                        {role:"user", content:[
-                                                {type:"image_url", image_url:{url:base64Image}},
-                                                {type:"text", text:`Goal: ${goalInput.value}\nErrors: ${errors||"None"}\n\nCode:\n${code}`}
-                                        ]}
-                                ];
-                                let body = {model:"gpt-4.1-nano", messages, temperature:0.55, max_tokens: 6666};
-                                let res = await fetch("https://api.openai.com/v1/chat/completions",{method:"POST",headers:{"Authorization":`Bearer ${apiKey}`,"Content-Type":"application/json"},body:JSON.stringify(body)});
-                                let data = await res.json();
-                                let reply = data.choices?.[0]?.message?.content?.trim()||"";
-                                reply = stripCodeFences(reply);
-                                if(logDetailInput.checked) log(agent, "AI Visual Response:", reply);
-                                try {
-                                        let obj = JSON.parse(reply);
-                                        return obj;
-                                } catch(e){
-                                        log(agent, "JSON parse error", e.message, {error:true});
-                                        return {status:"error", message: reply};
-                                }
-                                } finally { showSpinner(false); }
-                        }
+			async function callVisualAgent(apiKey, agent, code, errors, base64Image){
+				if(!base64Image)return{status:"No screenshot",message:"No screenshot",code};
+				showSpinner(true);
+				try{
+					let messages=[
+						{role:"system", content:"You are the Visual Debug AI agent. Analyze the provided web page screenshot, errors, and HTML code. Suggest or directly fix visual bugs. Respond only with a JSON object: { \"status\": \"<done|continue|error>\", \"message\": \"...\", \"code\": \"<optional HTML>\" }. Use short notes in the `message` field for any remaining issues. Put the fixed HTML in the `code` field when modifications are needed."},
+						{role:"user", content:[
+							{type:"image_url", image_url:{url:base64Image}},
+							{type:"text", text:`Goal: ${goalInput.value}\nErrors: ${errors||"None"}\n\nCode:\n${code}`}
+						]}
+					];
+					let body = {model:"gpt-4.1-nano", messages, temperature:0.55, max_tokens: 6666};
+					let res = await fetch("https://api.openai.com/v1/chat/completions",{method:"POST",headers:{"Authorization":`Bearer ${apiKey}`,"Content-Type":"application/json"},body:JSON.stringify(body)});
+					let data = await res.json();
+					let reply = data.choices?.[0]?.message?.content?.trim()||"";
+					reply = stripCodeFences(reply);
+					if(logDetailInput.checked) log(agent, "AI Visual Response:", reply);
+					try {
+						let obj = JSON.parse(reply);
+						return obj;
+					} catch(e){
+						log(agent, "JSON parse error", e.message, {error:true});
+						return {status:"error", message: reply};
+					}
+				} finally { showSpinner(false); }
+			}
 			function stripCodeFences(aiText) {
 				return aiText.replace(/^\s*```html\s*/i, '')
 				.replace(/^\s*```\s*/i, '')
 				.replace(/```$/g, '')
 				.trim();
 			}
+			
+			
+			
+			
 			// --- Capture iframe JS errors (runtime) ---
-                        function captureIframeConsoleErrors(){
-                                return new Promise(resolve=>{
-                                        let errors = [];
-                                        let iframeWindow;
-                                        try{
-                                                iframeWindow = preview.contentWindow;
-                                                if(!iframeWindow){ resolve(""); return; }
-                                                function onError(event){
-                                                        errors.push(event.message+` (line ${event.lineno})`);
-                                                }
-                                                iframeWindow.onerror = onError;
-                                        }catch(e){
-                                                // Cross-origin access denied
-                                                resolve("");
-                                                return;
-                                        }
-                                        setTimeout(()=>{
-                                                try{ iframeWindow.onerror = null; }catch(e){}
-                                                resolve(errors.join('\n'));
-                                        }, 800);
-                                });
-                        }
-                        // --- Screenshot as base64 png ---
-                        // Sanitizes inline style attributes before rendering
-                        // with html2canvas so malformed CSS does not break the
-                        // capture process. Errors are logged but do not halt
-                        // the pipeline.
-                        async function captureIframeScreenshot(){
-                                let doc = preview.contentDocument;
-                                if(!doc) return null;
-                                try{
-                                        let canvas = await html2canvas(doc.body, {
-                                                useCORS: true,
-                                                onclone: cloned => {
-                                                        // remove <link rel="stylesheet"> and <style> tags
-                                                        cloned.querySelectorAll('link[rel="stylesheet"], style').forEach(el => el.remove());
-                                                        // reassign inline styles individually, skipping malformed declarations
-                                                        cloned.querySelectorAll('[style]').forEach(el => {
-                                                                const cssText = el.getAttribute('style') || '';
-                                                                el.removeAttribute('style');
-                                                                cssText.split(';').forEach(pair => {
-                                                                        pair = pair.trim();
-                                                                        if(!pair) return;
-                                                                        try {
-                                                                                el.style.cssText += pair + ';';
-                                                                        } catch(e) {
-                                                                                /* ignore invalid declaration */
-                                                                        }
-                                                                });
-                                                        });
-                                                }
-                                        });
-                                        return canvas.toDataURL("image/png");
-                                }catch(e){
-                                        console.error("Screenshot failed:", e);
-                                        log("Screenshot", `Initial capture failed (${e.message}). Retrying without inline styles...`, null, {warn:true});
-                                        try{
-                                                let stripped = doc.cloneNode(true);
-                                                stripped.querySelectorAll('[style]').forEach(el => el.removeAttribute('style'));
-                                                let container = document.createElement('div');
-                                                container.style.cssText = 'position:absolute;left:-9999px;top:-9999px;';
-                                                container.appendChild(stripped.body);
-                                                document.body.appendChild(container);
-                                                try {
-                                                        let canvas = await html2canvas(stripped.body, {useCORS: true});
-                                                        log("Screenshot", "Fallback capture succeeded.");
-                                                        return canvas.toDataURL("image/png");
-                                                } finally {
-                                                        if(container.parentNode) container.parentNode.removeChild(container);
-                                                }
-                                        }catch(e2){
-                                                console.error("Screenshot fallback failed:", e2);
-                                                log("Screenshot", `Fallback capture failed (${e2.message}). Continuing without screenshot.`, null, {error:true});
-                                        }
-                                }
-                                return null;
-                        }
-                </script>
-        </body>
+			function captureIframeConsoleErrors(){
+				return new Promise(resolve=>{
+					let errors = [];
+					let iframeWindow;
+					try{
+						iframeWindow = preview.contentWindow;
+						if(!iframeWindow){ resolve(""); return; }
+						function onError(event){
+							errors.push(event.message+` (line ${event.lineno})`);
+						}
+						iframeWindow.onerror = onError;
+					}catch(e){
+						// Cross-origin access denied
+						resolve("");
+						return;
+					}
+					setTimeout(()=>{
+						try{ iframeWindow.onerror = null; }catch(e){}
+						resolve(errors.join('\n'));
+					}, 800);
+				});
+			}
+			async function captureIframeScreenshot() {
+    // Use the hidden preview iframe for screenshot
+    const hiddenIframe = document.getElementById('hiddenPreview').querySelector('iframe');
+    if (!hiddenIframe) return null;
+    const doc = hiddenIframe.contentDocument;
+    if (!doc || !doc.body) return null;
+
+    // Make sure all fonts/images are loaded
+    if (doc.fonts && doc.fonts.ready) await doc.fonts.ready;
+    await new Promise(res => setTimeout(res, 80));
+
+    try {
+        return await window.domtoimage.toPng(doc.body, {
+            bgcolor: "#fff",
+            cacheBust: true
+        });
+    } catch (err) {
+        console.error("Screenshot failed:", err);
+        return null;
+    }
+}
+
+			
+			
+			function updatePreview(html) {
+    preview.srcdoc = sanitizePreviewHtml(html);
+
+    // --- Render to hidden iframe for screenshot ---
+    const hiddenPreview = document.getElementById('hiddenPreview');
+    hiddenPreview.innerHTML = ''; // clear old
+
+    const hiddenIframe = document.createElement('iframe');
+    hiddenIframe.style.width = '1200px';
+    hiddenIframe.style.height = '800px';
+    hiddenIframe.style.border = 'none';
+    hiddenIframe.sandbox = 'allow-same-origin allow-scripts'; // allow images/fonts
+    hiddenPreview.appendChild(hiddenIframe);
+
+    // Write HTML into the iframe
+    hiddenIframe.contentDocument.open();
+    hiddenIframe.contentDocument.write(sanitizePreviewHtml(html));
+    hiddenIframe.contentDocument.close();
+}
+
+			
+			
+		</script>
+		
+	</body>
 </html>
