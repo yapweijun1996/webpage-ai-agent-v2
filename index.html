@@ -267,15 +267,37 @@ function showSpinner(show){ spinnerOverlay.style.display = show ? 'flex' : 'none
 				window.sessionStorage.setItem('OPENAI_API_KEY', apiKeyInput.value);
 			});
 			
-                        function sanitizePreviewHtml(html) {
+function sanitizePreviewHtml(html) {
                                 // Strip potentially dangerous tags
                                 html = html.replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '')
                                            .replace(/<iframe[^>]*>[\s\S]*?<\/iframe>/gi, '')
                                            .replace(/<object[^>]*>[\s\S]*?<\/object>/gi, '')
                                            .replace(/<embed[^>]*>[\s\S]*?<\/embed>/gi, '');
                                 // Remove z-indexes above a certain value and position:fixed styles
-                                return html.replace(/z-index\s*:\s*\d{4,};?/gi, 'z-index:100;')
-                                        .replace(/position\s*:\s*fixed;?/gi, 'position:absolute;');
+        return html.replace(/z-index\s*:\s*\d{4,};?/gi, 'z-index:100;')
+                .replace(/position\s*:\s*fixed;?/gi, 'position:absolute;');
+}
+
+                        // Parse inline style text and keep only declarations
+                        // that the browser accepts. Invalid properties or
+                        // values are dropped.
+                        function sanitizeStyleText(styleStr){
+                                const tmp = document.createElement('div');
+                                const valid = [];
+                                styleStr.split(';').forEach(pair=>{
+                                        pair = pair.trim();
+                                        if(!pair) return;
+                                        try{
+                                                tmp.style.cssText = '';
+                                                tmp.style.cssText = pair;
+                                                if(tmp.style.length > 0){
+                                                        valid.push(tmp.style.cssText.trim());
+                                                }
+                                        }catch(e){
+                                                /* ignore invalid declarations */
+                                        }
+                                });
+                                return valid.join(';');
                         }
 			
 			// Update this in your code:
@@ -696,10 +718,22 @@ function showSpinner(show){ spinnerOverlay.style.display = show ? 'flex' : 'none
                                                         cloned.querySelectorAll('style').forEach(el => el.remove());
                                                         cloned.querySelectorAll('[style]').forEach(el => {
                                                                 const original = el.getAttribute('style') || '';
-                                                                el.removeAttribute('style');
-                                                                try { el.style.cssText = original; }
-                                                                catch { /* ignore invalid style declarations */ }
-                                                                el.setAttribute('style', el.style.cssText);
+                                                                const sanitized = sanitizeStyleText(original);
+                                                                if (original.trim() && sanitized !== original.trim()) {
+                                                                        const removed = [];
+                                                                        original.split(';').forEach(p => {
+                                                                                p = p.trim();
+                                                                                if (!p) return;
+                                                                                const tmp = document.createElement('div');
+                                                                                try { tmp.style.cssText = p; } catch {}
+                                                                                if (tmp.style.length === 0) removed.push(p);
+                                                                        });
+                                                                        if (removed.length) {
+                                                                                console.log('Removed invalid styles on', '<' + el.tagName.toLowerCase() + '>', removed.join('; '));
+                                                                        }
+                                                                }
+                                                                if (sanitized) el.setAttribute('style', sanitized);
+                                                                else el.removeAttribute('style');
                                                         });
                                                 }
                                         });
