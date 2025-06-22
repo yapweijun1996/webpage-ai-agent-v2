@@ -593,6 +593,7 @@ function showSpinner(show){ spinnerOverlay.style.display = show ? 'flex' : 'none
 				});
                                 let data = await res.json();
                                 if (!res.ok || !data.choices || !data.choices[0]) {
+                                        log(agent, JSON.stringify(data), null, {error:true});
                                         let errMsg = data.error?.message || "OpenAI API Error";
                                         log(agent, `ERROR: ${errMsg}`, null, {error:true});
                                         statusBar.textContent = `Error from OpenAI: ${errMsg}`;
