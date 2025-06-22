@@ -810,24 +810,19 @@
     return await window.domtoimage.toPng(doc.body, {
       bgcolor: "#fff",
       cacheBust: true,
-      filter: node => {
-        if (node.tagName === 'IMG') {
-          // Allow only same-origin or data URL images
-          if (
-            !node.src.startsWith(window.location.origin) &&
-            !node.src.startsWith('data:')
-          ) {
-            console.warn('Filtered out cross-origin image:', node.src);
-            return false; // skip cross-origin images to avoid CORS errors
-          }
-          // Skip unloaded or broken images
-          if (!node.complete || node.naturalWidth === 0) {
-            console.warn('Filtered out unloaded image:', node.src);
-            return false;
-          }
-        }
-        return true;
-      }
+filter: node => {
+  if (node.tagName === 'IMG') {
+    // 只允许同源或 data: URL
+    if (!node.src.startsWith(window.location.origin) && !node.src.startsWith('data:')) {
+      console.warn('Filtered out cross-origin image:', node.src);
+      return false; // 跳过跨域图片，避免CORS错误
+    }
+    if (!node.complete || node.naturalWidth === 0) {
+      return false; // 跳过未加载完成或坏图
+    }
+  }
+  return true;
+}
     });
   } catch (err) {
     console.error("Screenshot failed:", err);
