@@ -91,7 +91,8 @@
                         }
                         #helpOverlay .closeBtn { background:#ad2331; margin-top:1em; }
                 </style>
-		<script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+                <!-- Use a local copy of html2canvas to avoid network issues -->
+                <script src="html2canvas.min.js"></script>
 	</head>
 	<body>
 		<header>
@@ -672,11 +673,11 @@ function showSpinner(show){ spinnerOverlay.style.display = show ? 'flex' : 'none
                                         let canvas = await html2canvas(doc.body);
                                         return canvas.toDataURL("image/png");
                                 }catch(e){
+                                        console.error("Screenshot failed:", e);
                                         log("Screenshot", e.message, null, {error:true});
-                                        alert("Screenshot failed: " + e.message);
                                 }
-				return null;
-			}
-		</script>
-	</body>
+                                return null;
+                        }
+                </script>
+        </body>
 </html>
