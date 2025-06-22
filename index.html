@@ -221,8 +221,10 @@
 			const screenshotModal = document.getElementById('screenshotModal');
 			const screenshotModalImg = screenshotModal.querySelector('img');
 			const spinnerOverlay = document.getElementById('spinnerOverlay');
-			const planBox = document.getElementById('planBox');
-			const dividers = document.querySelectorAll('.divider');
+                        const planBox = document.getElementById('planBox');
+                        const IMG_PLACEHOLDER =
+                                'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==';
+                        const dividers = document.querySelectorAll('.divider');
                        function showSpinner(show){ spinnerOverlay.style.display = show ? 'block' : 'none'; }
 			dividers.forEach(d=>{
 				d.addEventListener('mousedown', e=>initDrag(e, d));
@@ -797,22 +799,24 @@
 				const images = Array.from(doc.images);
 				
 				// Helper to convert one image src to base64
-				async function toBase64(img) {
-					try {
-						const response = await fetch(img.src, { mode: 'cors' });
-						const blob = await response.blob();
-						
-						return await new Promise((resolve, reject) => {
-							const reader = new FileReader();
-							reader.onloadend = () => resolve(reader.result);
-							reader.onerror = reject;
-							reader.readAsDataURL(blob);
-						});
-					} catch (err) {
-						console.warn('Failed to convert image:', img.src, err);
-						return img.src; // fallback to original if fail
-					}
-				}
+                                async function toBase64(img) {
+                                        try {
+                                                const response = await fetch(img.src, { mode: 'cors' });
+                                                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                                                const blob = await response.blob();
+
+                                                return await new Promise((resolve, reject) => {
+                                                        const reader = new FileReader();
+                                                        reader.onloadend = () => resolve(reader.result);
+                                                        reader.onerror = reject;
+                                                        reader.readAsDataURL(blob);
+                                                });
+                                        } catch (err) {
+                                                console.warn('Failed to convert image:', img.src, err);
+                                                log('Visual Debug', `Placeholder used for ${img.src}`, null, {warn:true});
+                                                return IMG_PLACEHOLDER; // use placeholder on failure
+                                        }
+                                }
 				
 				// Replace all images src with base64
 				await Promise.all(images.map(async img => {
