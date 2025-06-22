@@ -639,16 +639,18 @@
 					return `Summarize this web project goal in 1-2 sentences, extract intent and any requirements:\n"${input1}"`;
 					case "Plan":
 					return `Based on this user intent:\n"${input1}"\nProvide a numbered list of UI components, each followed by a short purpose. Example:\n1. Component name – description.`;
-					case "Generate":
-					return `Generate a valid, standalone HTML file (with inline CSS/JS) implementing this UI plan:
-					${input1}
-					
-					IMPORTANT: Do NOT use 'position:fixed' or 'z-index' above 100 in your styles.
-					Do NOT cover the entire viewport outside your container. Your code is rendered inside a limited area only.
-					
-					If prior code exists, improve or merge with:
-					${input2||"(none)"}
-					Only output full HTML, no explanations.`;
+                                        case "Generate":
+                                        return `Goal: ${goalInput.value}
+
+Generate a valid, standalone HTML file (with inline CSS/JS) implementing this UI plan:
+                                        ${input1}
+
+                                        IMPORTANT: Do NOT use 'position:fixed' or 'z-index' above 100 in your styles.
+                                        Do NOT cover the entire viewport outside your container. Your code is rendered inside a limited area only.
+
+                                        If prior code exists, improve or merge with:
+                                        ${input2||"(none)"}
+                                        Only output full HTML, no explanations.`;
 					case "Debug":
 					return `Review this HTML/CSS/JS code:\n${input1}\nDetected runtime errors:\n${input2||"None"}\nFix all issues. Output only corrected code.`;
                                         case "Improve":
