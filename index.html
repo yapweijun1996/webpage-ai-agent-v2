@@ -657,10 +657,13 @@ function showSpinner(show){ spinnerOverlay.style.display = show ? 'flex' : 'none
 			async function captureIframeScreenshot(){
 				let doc=preview.contentDocument;
 				if(!doc)return null;
-				try{
-					let canvas=await html2canvas(doc.body);
-					return canvas.toDataURL("image/png");
-				}catch(e){ log("Screenshot","Failed: "+e);}
+                                try{
+                                        let canvas = await html2canvas(doc.body);
+                                        return canvas.toDataURL("image/png");
+                                }catch(e){
+                                        log("Screenshot", e.message, null, {error:true});
+                                        alert("Screenshot failed: " + e.message);
+                                }
 				return null;
 			}
 		</script>
