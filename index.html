@@ -310,8 +310,25 @@
 			
 			
 			function updatePreview(html) {
-				preview.srcdoc = sanitizePreviewHtml(html);
-			}
+  preview.srcdoc = sanitizePreviewHtml(html);
+
+  const hiddenPreview = document.getElementById('hiddenPreview');
+  let hiddenIframe = hiddenPreview.querySelector('iframe');
+  if (!hiddenIframe) {
+    hiddenIframe = document.createElement('iframe');
+    hiddenIframe.style.width = '1200px';
+    hiddenIframe.style.height = '800px';
+    hiddenIframe.style.border = 'none';
+    hiddenIframe.sandbox = 'allow-same-origin allow-scripts';
+    hiddenPreview.appendChild(hiddenIframe);
+  }
+
+  // 直接写入文档，不销毁iframe节点
+  hiddenIframe.contentDocument.open();
+  hiddenIframe.contentDocument.write(sanitizePreviewHtml(html));
+  hiddenIframe.contentDocument.close();
+}
+
 			editor.addEventListener('input', ()=>updatePreview(editor.value));
 			
 			// Settings panel show/hide
@@ -720,57 +737,48 @@
 				});
 			}
 			async function captureIframeScreenshot() {
-				const hiddenPreview = document.getElementById('hiddenPreview');
-				const hiddenIframe = hiddenPreview.querySelector('iframe');
-				if (!hiddenIframe) return null;
-				
-				// Wait for iframe to load fully
-				await new Promise(resolve => {
-					if (hiddenIframe.contentDocument.readyState === 'complete') {
-						resolve();
-					} else {
-						hiddenIframe.onload = () => resolve();
-					}
-				});
-				
-				const doc = hiddenIframe.contentDocument;
-				if (!doc || !doc.body) return null;
-				
-				if (doc.fonts && doc.fonts.ready) await doc.fonts.ready;
-				await new Promise(res => setTimeout(res, 80));
-				
-				try {
-					return await window.domtoimage.toPng(doc.body, {
-						bgcolor: "#fff",
-						cacheBust: true
-					});
-				} catch (err) {
-					console.error("Screenshot failed:", err);
-					return null;
-				}
-			}
+  const hiddenPreview = document.getElementById('hiddenPreview');
+  const hiddenIframe = hiddenPreview.querySelector('iframe');
+  if (!hiddenIframe) return null;
+
+  // 等待iframe加载完成
+  await new Promise(resolve => {
+    if (hiddenIframe.contentDocument.readyState === 'complete') {
+      resolve();
+    } else {
+      hiddenIframe.onload = () => resolve();
+    }
+  });
+
+  const doc = hiddenIframe.contentDocument;
+  if (!doc || !doc.body) return null;
+
+  if (doc.fonts && doc.fonts.ready) await doc.fonts.ready;
+  await new Promise(res => setTimeout(res, 80));
+
+  try {
+    // 过滤远程图片，避免加载失败导致报错
+    return await window.domtoimage.toPng(doc.body, {
+      bgcolor: "#fff",
+      cacheBust: true,
+      filter: node => {
+        if (node.tagName === 'IMG') {
+          // 过滤掉所有via.placeholder.com的图片，或任何你确定访问不了的远程图片
+          return !node.src.includes('via.placeholder.com');
+        }
+        return true;
+      }
+    });
+  } catch (err) {
+    console.error("Screenshot failed:", err);
+    return null;
+  }
+}
+
 			
 			
 			
 			
-			function updatePreview(html) {
-				preview.srcdoc = sanitizePreviewHtml(html);
-				
-				const hiddenPreview = document.getElementById('hiddenPreview');
-				let hiddenIframe = hiddenPreview.querySelector('iframe');
-				if (!hiddenIframe) {
-					hiddenIframe = document.createElement('iframe');
-					hiddenIframe.style.width = '1200px';
-					hiddenIframe.style.height = '800px';
-					hiddenIframe.style.border = 'none';
-					hiddenIframe.sandbox = 'allow-same-origin allow-scripts';
-					hiddenPreview.appendChild(hiddenIframe);
-				}
-				
-				hiddenIframe.contentDocument.open();
-				hiddenIframe.contentDocument.write(sanitizePreviewHtml(html));
-				hiddenIframe.contentDocument.close();
-			}
 			
 			
 			
