@@ -234,28 +234,27 @@
 			let savedLogFlex = '';
 			let savedPrevFlex = '';
 			let savedEditorFlex = '';
-			function updateLogVisibility(){
-				const divider = logContainer.previousElementSibling;
-				if(logCollapsed){
-					logContent.style.display = 'none';
-					savedLogFlex = logContainer.style.flex;
-					savedPrevFlex = previewContainer.style.flex;
-					savedEditorFlex = editorContainer.style.flex;
-					logContainer.style.display = 'none';
-					if(divider && divider.classList.contains('divider')) divider.style.display = 'none';
-					previewContainer.style.flex = '';
-					editorContainer.style.flex = '';
-					toggleLogBtn.textContent = 'Show Log';
-				} else {
-					logContent.style.display = '';
-					logContainer.style.display = '';
-					if(divider && divider.classList.contains('divider')) divider.style.display = '';
-					if(savedLogFlex) logContainer.style.flex = savedLogFlex;
-					if(savedPrevFlex) previewContainer.style.flex = savedPrevFlex;
-					if(savedEditorFlex) editorContainer.style.flex = savedEditorFlex;
-					toggleLogBtn.textContent = 'Hide Log';
-				}
-			}
+                        function updateLogVisibility(){
+                                const divider = logContainer.previousElementSibling;
+                                if(logCollapsed){
+                                        logContent.style.display = 'none';
+                                        savedLogFlex = logContainer.style.flex;
+                                        savedPrevFlex = previewContainer.style.flex;
+                                        savedEditorFlex = editorContainer.style.flex;
+                                        logContainer.style.flex = '0 0 auto';
+                                        if(divider && divider.classList.contains('divider')) divider.style.display = 'none';
+                                        previewContainer.style.flex = '';
+                                        editorContainer.style.flex = '';
+                                        toggleLogBtn.textContent = 'Show Log';
+                                } else {
+                                        logContent.style.display = '';
+                                        logContainer.style.flex = savedLogFlex || '';
+                                        if(divider && divider.classList.contains('divider')) divider.style.display = '';
+                                        if(savedPrevFlex) previewContainer.style.flex = savedPrevFlex;
+                                        if(savedEditorFlex) editorContainer.style.flex = savedEditorFlex;
+                                        toggleLogBtn.textContent = 'Hide Log';
+                                }
+                        }
 			updateLogVisibility();
 			toggleLogBtn.onclick = ()=>{
 				logCollapsed = !logCollapsed;
