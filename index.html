@@ -641,18 +641,28 @@ function showSpinner(show){ spinnerOverlay.style.display = show ? 'flex' : 'none
 				.trim();
 			}
 			// --- Capture iframe JS errors (runtime) ---
-			function captureIframeConsoleErrors(){
-				return new Promise(resolve=>{
-					let iframeWindow = preview.contentWindow, errors=[];
-					if(!iframeWindow){ resolve(""); return;}
-					function onError(event){ errors.push(event.message+` (line ${event.lineno})`);}
-					iframeWindow.onerror = onError;
-					setTimeout(()=>{
-						iframeWindow.onerror=null;
-						resolve(errors.join('\n'));
-					}, 800);
-				});
-			}
+                        function captureIframeConsoleErrors(){
+                                return new Promise(resolve=>{
+                                        let errors = [];
+                                        let iframeWindow;
+                                        try{
+                                                iframeWindow = preview.contentWindow;
+                                                if(!iframeWindow){ resolve(""); return; }
+                                                function onError(event){
+                                                        errors.push(event.message+` (line ${event.lineno})`);
+                                                }
+                                                iframeWindow.onerror = onError;
+                                        }catch(e){
+                                                // Cross-origin access denied
+                                                resolve("");
+                                                return;
+                                        }
+                                        setTimeout(()=>{
+                                                try{ iframeWindow.onerror = null; }catch(e){}
+                                                resolve(errors.join('\n'));
+                                        }, 800);
+                                });
+                        }
 			// --- Screenshot as base64 png ---
 			async function captureIframeScreenshot(){
 				let doc=preview.contentDocument;
