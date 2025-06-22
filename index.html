@@ -681,14 +681,33 @@ function showSpinner(show){ spinnerOverlay.style.display = show ? 'flex' : 'none
                                         }, 800);
                                 });
                         }
-			// --- Screenshot as base64 png ---
-			async function captureIframeScreenshot(){
-				let doc=preview.contentDocument;
-				if(!doc)return null;
+                        // --- Screenshot as base64 png ---
+                        // Sanitizes inline style attributes before rendering
+                        // with html2canvas so malformed CSS does not break the
+                        // capture process. Errors are logged but do not halt
+                        // the pipeline.
+                        async function captureIframeScreenshot(){
+                                let doc = preview.contentDocument;
+                                if(!doc) return null;
                                 try{
                                         let canvas = await html2canvas(doc.body, {
                                                 onclone: cloned => {
+                                                        // remove <style> tags and clean inline styles
                                                         cloned.querySelectorAll('style').forEach(el => el.remove());
+                                                        cloned.querySelectorAll('[style]').forEach(el => {
+                                                                const original = el.getAttribute('style');
+                                                                if(!original) return;
+                                                                const safe = [];
+                                                                original.split(';').forEach(r => {
+                                                                        const parts = r.split(':');
+                                                                        if(parts.length >= 2){
+                                                                                const prop = parts[0].trim();
+                                                                                const val = parts.slice(1).join(':').trim();
+                                                                                if(prop && val) safe.push(`${prop}: ${val}`);
+                                                                        }
+                                                                });
+                                                                el.setAttribute('style', safe.join('; '));
+                                                        });
                                                 }
                                         });
                                         return canvas.toDataURL("image/png");
