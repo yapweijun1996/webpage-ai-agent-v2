@@ -773,62 +773,66 @@
 				});
 			}
 			async function captureIframeScreenshot() {
-				const hiddenPreview = document.getElementById('hiddenPreview');
-				const hiddenIframe = hiddenPreview.querySelector('iframe');
-				if (!hiddenIframe) return null;
-				
-				await new Promise(resolve => {
-					if (hiddenIframe.contentDocument.readyState === 'complete') {
-						resolve();
-					} else {
-						hiddenIframe.onload = () => resolve();
-					}
-				});
-				
-				const doc = hiddenIframe.contentDocument;
-				if (!doc || !doc.body) return null;
-				
-				// 等待字体加载完成
-				if (doc.fonts && doc.fonts.ready) await doc.fonts.ready;
-				
-				// 等待iframe内所有图片加载完成
-				const imgs = [...doc.images];
-				await Promise.all(imgs.map(img => new Promise(res => {
-					if (img.complete && img.naturalWidth !== 0) res();
-					else img.onload = res;
-					img.onerror = res; // 避免死等
-				})));
-				
-				await new Promise(res => setTimeout(res, 80)); // 给浏览器一点时间渲染
-				
-				try {
-					return await window.domtoimage.toPng(doc.body, {
-						bgcolor: "#fff",
-						cacheBust: true,
-						filter: node => {
-							if (node.tagName === 'IMG') {
-								console.log('Processing image src:', node.src);
-								if (node.src.includes('via.placeholder.com')) {
-									console.log('Filtered out placeholder image');
-									return false;
-								}
-								if (!node.src.startsWith(window.location.origin) && !node.src.startsWith('data:')) {
-									console.warn('External image detected without CORS:', node.src);
-									return false;
-								}
-								if (!node.complete || node.naturalWidth === 0) {
-									console.warn('Image not loaded or failed:', node.src);
-									return false;
-								}
-							}
-							return true;
-						}
-					});
-				} catch (err) {
-					console.error("Screenshot failed:", err);
-					return null;
-				}
-			}
+  const hiddenPreview = document.getElementById('hiddenPreview');
+  const hiddenIframe = hiddenPreview.querySelector('iframe');
+  if (!hiddenIframe) return null;
+
+  // 等待 iframe 加载完成
+  await new Promise(resolve => {
+    if (hiddenIframe.contentDocument.readyState === 'complete') {
+      resolve();
+    } else {
+      hiddenIframe.onload = () => resolve();
+    }
+  });
+
+  const doc = hiddenIframe.contentDocument;
+  if (!doc || !doc.body) return null;
+
+  // 等待字体加载完成
+  if (doc.fonts && doc.fonts.ready) await doc.fonts.ready;
+
+  // 等待所有图片加载完成或失败
+  const imgs = [...doc.images];
+  await Promise.all(imgs.map(img => new Promise(res => {
+    if (img.complete) {
+      // 图片已加载完
+      res();
+    } else {
+      img.onload = res;
+      img.onerror = res; // 加载失败也继续
+    }
+  })));
+
+  // 等待少量时间保证渲染
+  await new Promise(res => setTimeout(res, 80));
+
+  try {
+    return await window.domtoimage.toPng(doc.body, {
+      bgcolor: "#fff",
+      cacheBust: true,
+      filter: node => {
+        if (node.tagName === 'IMG') {
+          // 只允许同源或者 data: URL 图片
+          if (!node.src.startsWith(window.location.origin) && !node.src.startsWith('data:')) {
+            console.warn('Filtered out cross-origin image:', node.src);
+            return false;
+          }
+          // 过滤未加载完成或加载失败图片
+          if (!node.complete || node.naturalWidth === 0) {
+            console.warn('Filtered out unloaded image:', node.src);
+            return false;
+          }
+        }
+        return true;
+      }
+    });
+  } catch (err) {
+    console.error("Screenshot failed:", err);
+    return null;
+  }
+}
+
 			
 			
 			
