@@ -448,7 +448,8 @@
 				stopped = false; running = true;
 				runAI.disabled = true; stopAI.style.display = '';
 				statusBar.textContent = "Pipeline starting...";
-				debugLogList.innerHTML = ""; logEntries = [];
+                                debugLogList.innerHTML = ""; logEntries = [];
+                                let planText = "";
 				screenshotPreview.style.display = 'none';
 				screenshotImg.src = '';
 				screenshotModal.style.display = 'none';
@@ -480,8 +481,9 @@
 				// AGENT: Plan UI/components
 				statusBar.textContent = "2/8: Planning UI...";
 				updateStepper(1, 1, maxIterations);
-				let plan = await callAgent(apiKey, "Plan", intent);
-				log("Plan", "UI Plan:\n"+plan);
+                                let plan = await callAgent(apiKey, "Plan", intent);
+                                planText = plan; // store for later reference
+                                log("Plan", "UI Plan:\n"+plan);
 				planBox.textContent = plan;
 				planBox.style.display = 'block';
 				
@@ -580,8 +582,8 @@
 					return `Given this user goal: "${input1}"\nAnd this HTML code:\n${input2}\nIn 1 sentence: Does this code fulfill the user goal? Answer YES or NO, then a short reason.`;
 					case "Understand":
 					return `Summarize this web project goal in 1-2 sentences, extract intent and any requirements:\n"${input1}"`;
-					case "Plan":
-					return `Based on this user intent:\n"${input1}"\nList needed UI components, data flows, and features (bulleted).`;
+                                        case "Plan":
+                                        return `Based on this user intent:\n"${input1}"\nProvide a numbered list of UI components, each followed by a short purpose. Example:\n1. Component name – description.`;
 					case "Generate":
 					return `Generate a valid, standalone HTML file (with inline CSS/JS) implementing this UI plan:
 					${input1}
