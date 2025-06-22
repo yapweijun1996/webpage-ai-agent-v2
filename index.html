@@ -485,12 +485,12 @@ function showSpinner(show){ spinnerOverlay.style.display = show ? 'flex' : 'none
                                                 screenshotPreview.style.display = 'block';
                                         }
                                         let visual = await callVisualAgent(apiKey, "Visual Debug", code, errors, screenshot);
-					log("Visual Debug", "Visual check: "+(visual.status||visual.message||"-"));
-					if (visual.code && visual.code.toLowerCase().includes("<html"))
-					code = visual.code;
-					editor.value = code; updatePreview(code);
-					
-					// AGENT: Reflect/Check Goal
+                                        log("Visual Debug", "Visual check: "+(visual.status||visual.message||"-"));
+                                        if (visual.code && visual.code.toLowerCase().includes("<html"))
+                                        code = visual.code;
+                                        editor.value = code; updatePreview(code);
+
+                                        // AGENT: Reflect/Check Goal (uses code updated above)
                                         statusBar.textContent = `Iter ${iteration}/${maxIterations}: Reflecting on goal...`;
                                         updateStepper(5, iteration, maxIterations);
 					let reflection = await callAgent(apiKey, "Reflect", goalInput.value, code);
