@@ -826,7 +826,10 @@
   // Wait for fonts to load
   if (doc.fonts && doc.fonts.ready) await doc.fonts.ready;
 
-  // Wait for all images in iframe to load or error
+  // Convert all images to base64 BEFORE waiting for images to load
+  await convertAllImagesToBase64(hiddenIframe);
+
+  // Wait for all images (now base64) in iframe to load or error
   const imgs = [...doc.images];
   await Promise.all(imgs.map(img => new Promise(res => {
     if (img.complete && img.naturalWidth !== 0) {
@@ -837,9 +840,6 @@
     }
   })));
 
-  // **Convert all images to base64 before screenshot**
-  await convertAllImagesToBase64(hiddenIframe);
-
   // Small delay for rendering stability
   await new Promise(res => setTimeout(res, 80));
 
@@ -849,7 +849,7 @@
       cacheBust: true,
       filter: node => {
         if (node.tagName === 'IMG') {
-          // Allow only same-origin or data URLs (now most are data URLs)
+          // Allow only same-origin or data URLs (most are data URLs now)
           if (!node.src.startsWith(window.location.origin) && !node.src.startsWith('data:')) {
             console.warn('Filtered out cross-origin image:', node.src);
             return false;
@@ -866,6 +866,7 @@
     return null;
   }
 }
+
 
 			
 			
