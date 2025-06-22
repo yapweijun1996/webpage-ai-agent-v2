@@ -163,9 +163,12 @@
 			<div class="row">
 				<label><input id="juniorMode" type="checkbox" /> Junior Mode (show tips)</label>
 			</div>
-			<div class="row">
-				<label><input id="logDetail" type="checkbox" checked /> Show full prompt/response in log</label>
-			</div>
+                        <div class="row">
+                                <label><input id="logDetail" type="checkbox" checked /> Show full prompt/response in log</label>
+                        </div>
+                        <div class="row">
+                                <label><input id="showDebugLog" type="checkbox" /> Show Debug Log</label>
+                        </div>
 		</div>
 		<div id="helpOverlay">
 			<div class="panel">
@@ -196,8 +199,9 @@
 			const helpOverlay = document.getElementById('helpOverlay');
 			const maxIterationsInput = document.getElementById('maxIterations');
 			const agentDelayInput = document.getElementById('agentDelay');
-			const juniorModeInput = document.getElementById('juniorMode');
-			const logDetailInput = document.getElementById('logDetail');
+                        const juniorModeInput = document.getElementById('juniorMode');
+                        const logDetailInput = document.getElementById('logDetail');
+                        const showDebugLogInput = document.getElementById('showDebugLog');
 			const debugLogList = document.getElementById('debugLogList');
 			const copyHtmlBtn = document.getElementById('copyHtmlBtn');
 			const downloadHtmlBtn = document.getElementById('downloadHtmlBtn');
@@ -221,7 +225,8 @@
 			dividers.forEach(d=>{
 				d.addEventListener('mousedown', e=>initDrag(e, d));
 			});
-			let logCollapsed = window.sessionStorage.getItem('LOG_COLLAPSED') === 'true';
+                        let logCollapsed = window.sessionStorage.getItem('LOG_COLLAPSED') === 'true';
+                        showDebugLogInput.checked = !logCollapsed;
 			function updateLogVisibility(){
 				if(logCollapsed){
 					logContent.style.display='none';
@@ -236,11 +241,17 @@
 				}
 			}
 			updateLogVisibility();
-			toggleLogBtn.onclick = ()=>{
-				logCollapsed = !logCollapsed;
-				window.sessionStorage.setItem('LOG_COLLAPSED', logCollapsed);
-				updateLogVisibility();
-			};
+                        toggleLogBtn.onclick = ()=>{
+                                logCollapsed = !logCollapsed;
+                                window.sessionStorage.setItem('LOG_COLLAPSED', logCollapsed);
+                                showDebugLogInput.checked = !logCollapsed;
+                                updateLogVisibility();
+                        };
+                        showDebugLogInput.onchange = () => {
+                                logCollapsed = !showDebugLogInput.checked;
+                                window.sessionStorage.setItem('LOG_COLLAPSED', logCollapsed);
+                                updateLogVisibility();
+                        };
 			function initDrag(e, divider){
 				e.preventDefault();
 				const prev = divider.previousElementSibling;
