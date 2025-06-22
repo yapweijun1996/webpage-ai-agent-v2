@@ -740,11 +740,9 @@ function sanitizePreviewHtml(html) {
                                         return canvas.toDataURL("image/png");
                                 }catch(e){
                                         console.error("Screenshot failed:", e);
-                                        log("Screenshot", e.message, null, {error:true});
+                                        log("Screenshot", `Initial capture failed (${e.message}). Retrying without inline styles...`, null, {warn:true});
                                         try{
                                                 let stripped = doc.cloneNode(true);
-                                                stripped.querySelectorAll('link[rel="stylesheet"]').forEach(el => el.remove());
-                                                stripped.querySelectorAll('style').forEach(el => el.remove());
                                                 stripped.querySelectorAll('[style]').forEach(el => el.removeAttribute('style'));
                                                 let container = document.createElement('div');
                                                 container.style.cssText = 'position:absolute;left:-9999px;top:-9999px;';
@@ -752,13 +750,14 @@ function sanitizePreviewHtml(html) {
                                                 document.body.appendChild(container);
                                                 try {
                                                         let canvas = await html2canvas(stripped.body);
+                                                        log("Screenshot", "Fallback capture succeeded.");
                                                         return canvas.toDataURL("image/png");
                                                 } finally {
                                                         if(container.parentNode) container.parentNode.removeChild(container);
                                                 }
                                         }catch(e2){
-                                                console.error("Screenshot retry failed:", e2);
-                                                log("Screenshot retry", e2.message, null, {error:true});
+                                                console.error("Screenshot fallback failed:", e2);
+                                                log("Screenshot", `Fallback capture failed (${e2.message}). Continuing without screenshot.`, null, {error:true});
                                         }
                                 }
                                 return null;
