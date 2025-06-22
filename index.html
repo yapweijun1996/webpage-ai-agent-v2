@@ -292,7 +292,7 @@
 			let lastDiff = '', lastStepIndex = 0;
 			let logEntries = [];
 			const pipelineSteps = [
-				"Understand","Plan","Generate","Debug","Visual Debug","Reflect","Improve","Finalize"
+				"PromptEnhancer","Understand","Plan","Generate","Debug","Visual Debug","Reflect","Improve","Finalize"
 			];
 			
 			// Save/load API key (session, not persistent)
@@ -520,6 +520,13 @@
 					goalInput.focus(); runAI.disabled = false; stopAI.style.display = 'none';
 					return;
 				}
+				
+				
+				statusBar.textContent = "0/8: Enhancing prompt...";
+				updateStepper(0, 1, maxIterations);
+				let enhancedGoal = await callAgent(apiKey, "PromptEnhancer", userGoal);
+				log("PromptEnhancer", "Enhanced Prompt:\n" + enhancedGoal);
+				
 				let code = editor.value, iteration = 0, done = false, lastVisual = "";
 				let maxIterations = +maxIterationsInput.value || 30;
 				let agentDelay = +agentDelayInput.value || 600;
@@ -529,8 +536,8 @@
 				
 				// AGENT: Understand user intent
 				statusBar.textContent = "1/8: Understanding goal...";
-				updateStepper(0, 1, maxIterations);
-				let intent = await callAgent(apiKey, "Understand", userGoal);
+				updateStepper(1, 1, maxIterations);
+				let intent = await callAgent(apiKey, "Understand", enhancedGoal);
 				log("Understand", "Intent: "+intent);
 				
 				// AGENT: Plan UI/components
@@ -591,7 +598,8 @@
 					// AGENT: Reflect/Check Goal (uses code updated above)
 					statusBar.textContent = `Iter ${iteration}/${maxIterations}: Reflecting on goal...`;
 					updateStepper(5, iteration, maxIterations);
-					let reflection = await callAgent(apiKey, "Reflect", goalInput.value, code);
+					let reflection = await callAgent(apiKey, "Reflect", enhancedGoal, code);
+					
 					log("Reflect", reflection);
 					if (
 					(
@@ -636,6 +644,13 @@
 			// --------- AGENTS (PROMPT TEMPLATES) ----------
 			function agentPrompt(agent, input1, input2){
 				switch(agent){
+					case "PromptEnhancer":
+					return `User prompt: "${input1}"
+					
+					Rewrite and expand this user prompt to be specific, detailed, and clear for a web UI code generation agent.
+					- Add missing details (like layout, color, content, effect, and constraints) if needed.
+					- Make the goal actionable and unambiguous for an AI code generator.
+					- Do not change user’s original intent.`;
 					case "Reflect":
 					return `Given this user goal: "${input1}"\nAnd this HTML code:\n${input2}\nIn 1 sentence: Does this code fulfill the user goal? Answer YES or NO, then a short reason.`;
 					case "Understand":
