@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Embedded Editor and Log</title>
+<style>
+body { margin:0; font-family:'Segoe UI', Arial, sans-serif; background:#171b20; color:#f0f0f5; height:100vh; display:flex; flex-direction:column; }
+main { flex:1; display:flex; min-height:0; }
+#editorContainer, #logContainer { flex:1; display:flex; flex-direction:column; overflow:auto; }
+#editorContainer { max-width:40vw; min-width:380px; }
+#logContainer { max-width:33vw; min-width:350px; background:#181b20; }
+#logContent { flex:1; display:flex; flex-direction:column; overflow:auto; }
+#codeEditor { flex:1; width:100%; font-family:'JetBrains Mono',monospace; font-size:15px; background:#16191c; color:#e9e9e9; border:none; outline:none; padding:1rem; }
+#debugLogList { flex:1; width:100%; background:#191b20; color:#b9e8ff; font-size:13px; font-family:monospace; border:none; padding:1rem; overflow:auto; }
+#editorControls { display:flex; gap:1em; align-items:center; padding:0.6em 1em; background:#23262c; }
+#editorControls button { background:#25477c; font-size:0.98em; padding:0.45em 1.15em; }
+#logHeader { padding:0.6rem 1rem 0.3rem 1rem; font-weight:bold; letter-spacing:1px; background:#22262c; }
+#editorLabel { padding:0.6rem 1rem 0.3rem 1rem; font-weight:bold; letter-spacing:1px; background:#22262c; }
+.divider { width:5px; background:#444; cursor:col-resize; }
+body.dragging { user-select:none; }
+.logEntry {margin-bottom:1.3em; border-bottom:1px solid #2226; padding-bottom:0.7em;}
+.logEntry .stepName {color:#ffdf88; font-weight:600;}
+.logEntry .logMsg.error {color:#ff5c77;}
+.logEntry .logMsg.warn {color:#ffb854;}
+.logEntry .logMsg {margin:0.13em 0;}
+.copyLogBtn, .downloadLogBtn { margin-right:1em; background:#3e5799; }
+#screenshotModal { display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:#000a; align-items:center; justify-content:center; z-index:1000; }
+</style>
+</head>
+<body>
+<main>
+  <div id="editorContainer">
+    <div id="editorControls">
+      <button id="copyHtmlBtn">Copy HTML</button>
+      <button id="downloadHtmlBtn">Download HTML</button>
+      <button id="toggleDiffBtn">Show Diff</button>
+    </div>
+    <div id="editorLabel">Current HTML Code</div>
+    <textarea id="codeEditor" spellcheck="false" autocomplete="off"></textarea>
+    <div id="diffPanel" style="display:none;"></div>
+  </div>
+  <div class="divider"></div>
+  <div id="logContainer">
+    <div id="logHeader" style="display:flex; align-items:center;">
+      <span style="flex:1;">AI Debug Log</span>
+      <button id="toggleLogBtn" style="margin-right:1em;">Hide Log</button>
+      <button class="copyLogBtn">Copy Log</button>
+      <button class="downloadLogBtn">Download Log</button>
+    </div>
+    <div id="logContent">
+      <div id="screenshotPreview" style="display:none; padding:0.5rem; text-align:center; border-bottom:1px solid #222; background:#111;">
+        <img style="max-width:100%; max-height:160px; border:1px solid #555; border-radius:4px; cursor:pointer;" />
+      </div>
+      <div id="planBox" style="display:none; white-space:pre-wrap; background:#1b1e23; border-bottom:1px solid #222; padding:0.5rem; font-size:0.9em; color:#b6e6ff;"></div>
+      <div id="debugLogList"></div>
+    </div>
+  </div>
+</main>
+<div id="screenshotModal">
+  <img style="max-width:90vw; max-height:90vh; border:2px solid #aaa; border-radius:6px;" />
+</div>
+<script>
+document.addEventListener('DOMContentLoaded', ()=>{
+  const editorContainer = document.getElementById('editorContainer');
+  const logContainer = document.getElementById('logContainer');
+  const logContent = document.getElementById('logContent');
+  const editor = document.getElementById('codeEditor');
+  const copyHtmlBtn = document.getElementById('copyHtmlBtn');
+  const downloadHtmlBtn = document.getElementById('downloadHtmlBtn');
+  const toggleDiffBtn = document.getElementById('toggleDiffBtn');
+  const diffPanel = document.getElementById('diffPanel');
+  const toggleLogBtn = document.getElementById('toggleLogBtn');
+  const copyLogBtn = document.querySelector('.copyLogBtn');
+  const downloadLogBtn = document.querySelector('.downloadLogBtn');
+  const debugLogList = document.getElementById('debugLogList');
+  const screenshotPreview = document.getElementById('screenshotPreview');
+  const screenshotImg = screenshotPreview.querySelector('img');
+  const screenshotModal = document.getElementById('screenshotModal');
+  const screenshotModalImg = screenshotModal.querySelector('img');
+  const dividers = document.querySelectorAll('.divider');
+
+  let lastDiff = '';
+  let logEntries = [];
+
+  dividers.forEach(d => d.addEventListener('mousedown', e => initDrag(e, d)));
+
+  function initDrag(e, divider){
+    e.preventDefault();
+    const prev = divider.previousElementSibling;
+    const next = divider.nextElementSibling;
+    const startX = e.clientX;
+    const prevWidth = prev.getBoundingClientRect().width;
+    const nextWidth = next.getBoundingClientRect().width;
+    document.body.classList.add('dragging');
+    function onMove(ev){
+      const dx = ev.clientX - startX;
+      prev.style.flex = `0 0 ${prevWidth + dx}px`;
+      next.style.flex = `0 0 ${nextWidth - dx}px`;
+    }
+    function onUp(){
+      document.removeEventListener('mousemove', onMove);
+      document.removeEventListener('mouseup', onUp);
+      document.body.classList.remove('dragging');
+    }
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('mouseup', onUp);
+  }
+
+  let logCollapsed = false;
+  let savedLogFlex = '';
+  let savedEditorFlex = '';
+  function updateLogVisibility(){
+    const divider = logContainer.previousElementSibling;
+    if(logCollapsed){
+      logContent.style.display = 'none';
+      savedLogFlex = logContainer.style.flex;
+      savedEditorFlex = editorContainer.style.flex;
+      logContainer.style.display = 'none';
+      if(divider && divider.classList.contains('divider')) divider.style.display='none';
+      editorContainer.style.flex = '';
+      toggleLogBtn.textContent = 'Show Log';
+    } else {
+      logContent.style.display = '';
+      logContainer.style.display = '';
+      if(divider && divider.classList.contains('divider')) divider.style.display='';
+      if(savedLogFlex) logContainer.style.flex = savedLogFlex;
+      if(savedEditorFlex) editorContainer.style.flex = savedEditorFlex;
+      toggleLogBtn.textContent = 'Hide Log';
+    }
+  }
+
+  updateLogVisibility();
+
+  toggleLogBtn.onclick = () => {
+    logCollapsed = !logCollapsed;
+    updateLogVisibility();
+  };
+
+  copyHtmlBtn.onclick = () => navigator.clipboard.writeText(editor.value);
+  downloadHtmlBtn.onclick = () => {
+    const blob = new Blob([editor.value],{type:'text/html'});
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'index.html';
+    a.click();
+  };
+
+  copyLogBtn.onclick = () => {
+    const plain = logEntries.map(e=>`[${e.step}] ${e.msg}${e.obj ? '\n' + (typeof e.obj==='string'?e.obj:JSON.stringify(e.obj,null,2)) : ''}`).join('\n\n');
+    navigator.clipboard.writeText(plain);
+  };
+  downloadLogBtn.onclick = () => {
+    const plain = logEntries.map(e=>`[${e.step}] ${e.msg}${e.obj ? '\n' + (typeof e.obj==='string'?e.obj:JSON.stringify(e.obj,null,2)) : ''}`).join('\n\n');
+    const blob = new Blob([plain],{type:'text/plain'});
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'ai_debug_log.txt';
+    a.click();
+  };
+
+  screenshotImg.onclick = ()=>{
+    screenshotModalImg.src = screenshotImg.src;
+    screenshotModal.style.display = 'flex';
+  };
+  screenshotModal.onclick = ()=>{ screenshotModal.style.display = 'none'; };
+
+  toggleDiffBtn.onclick = ()=>{
+    if(diffPanel.style.display === 'none'){
+      diffPanel.style.display = 'block';
+      diffPanel.innerHTML = lastDiff || '(No changes)';
+    } else {
+      diffPanel.style.display = 'none';
+    }
+  };
+
+  function log(step, msg, obj, options={}){
+    const entry = document.createElement('div');
+    entry.className = 'logEntry';
+    let msgClass = options.error ? 'logMsg error' : options.warn ? 'logMsg warn' : 'logMsg';
+    entry.innerHTML = `<div class="stepName">${step}</div><div class="${msgClass}">${msg}</div>`;
+    debugLogList.appendChild(entry);
+    logEntries.push({step,msg,obj,options});
+    debugLogList.scrollTop = debugLogList.scrollHeight;
+  }
+
+  editor.value = '<!DOCTYPE html>\n<html><head><title>Demo</title></head><body><h1>Hello world!</h1></body></html>';
+});
+</script>
+</body>
+</html>
