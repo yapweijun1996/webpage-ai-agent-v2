@@ -163,9 +163,12 @@
 			<div class="row">
 				<label><input id="juniorMode" type="checkbox" /> Junior Mode (show tips)</label>
 			</div>
-			<div class="row">
-				<label><input id="logDetail" type="checkbox" checked /> Show full prompt/response in log</label>
-			</div>
+                        <div class="row">
+                                <label><input id="logDetail" type="checkbox" checked /> Show full prompt/response in log</label>
+                        </div>
+                        <div class="row">
+                                <label><input id="showDebugLog" type="checkbox" /> Show Debug Log</label>
+                        </div>
 		</div>
 		<div id="helpOverlay">
 			<div class="panel">
@@ -196,8 +199,9 @@
 			const helpOverlay = document.getElementById('helpOverlay');
 			const maxIterationsInput = document.getElementById('maxIterations');
 			const agentDelayInput = document.getElementById('agentDelay');
-			const juniorModeInput = document.getElementById('juniorMode');
-			const logDetailInput = document.getElementById('logDetail');
+                        const juniorModeInput = document.getElementById('juniorMode');
+                        const logDetailInput = document.getElementById('logDetail');
+                        const showDebugLogInput = document.getElementById('showDebugLog');
 			const debugLogList = document.getElementById('debugLogList');
 			const copyHtmlBtn = document.getElementById('copyHtmlBtn');
 			const downloadHtmlBtn = document.getElementById('downloadHtmlBtn');
@@ -221,7 +225,8 @@
 			dividers.forEach(d=>{
 				d.addEventListener('mousedown', e=>initDrag(e, d));
 			});
-			let logCollapsed = window.sessionStorage.getItem('LOG_COLLAPSED') === 'true';
+                        let logCollapsed = window.sessionStorage.getItem('LOG_COLLAPSED') === 'true';
+                        showDebugLogInput.checked = !logCollapsed;
 			function updateLogVisibility(){
 				if(logCollapsed){
 					logContent.style.display='none';
@@ -236,11 +241,17 @@
 				}
 			}
 			updateLogVisibility();
-			toggleLogBtn.onclick = ()=>{
-				logCollapsed = !logCollapsed;
-				window.sessionStorage.setItem('LOG_COLLAPSED', logCollapsed);
-				updateLogVisibility();
-			};
+                        toggleLogBtn.onclick = ()=>{
+                                logCollapsed = !logCollapsed;
+                                window.sessionStorage.setItem('LOG_COLLAPSED', logCollapsed);
+                                showDebugLogInput.checked = !logCollapsed;
+                                updateLogVisibility();
+                        };
+                        showDebugLogInput.onchange = () => {
+                                logCollapsed = !showDebugLogInput.checked;
+                                window.sessionStorage.setItem('LOG_COLLAPSED', logCollapsed);
+                                updateLogVisibility();
+                        };
 			function initDrag(e, divider){
 				e.preventDefault();
 				const prev = divider.previousElementSibling;
@@ -275,16 +286,24 @@
 				window.sessionStorage.setItem('OPENAI_API_KEY', apiKeyInput.value);
 			});
 			
-			function sanitizePreviewHtml(html) {
-				// Strip potentially dangerous tags
-				html = html.replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '')
-				.replace(/<iframe[^>]*>[\s\S]*?<\/iframe>/gi, '')
-				.replace(/<object[^>]*>[\s\S]*?<\/object>/gi, '')
-				.replace(/<embed[^>]*>[\s\S]*?<\/embed>/gi, '');
-				// Remove z-indexes above a certain value and position:fixed styles
-				return html.replace(/z-index\s*:\s*\d{4,};?/gi, 'z-index:100;')
-				.replace(/position\s*:\s*fixed;?/gi, 'position:absolute;');
-			}
+                        function sanitizePreviewHtml(html) {
+                                // Strip potentially dangerous tags
+                                html = html.replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '')
+                                .replace(/<iframe[^>]*>[\s\S]*?<\/iframe>/gi, '')
+                                .replace(/<object[^>]*>[\s\S]*?<\/object>/gi, '')
+                                .replace(/<embed[^>]*>[\s\S]*?<\/embed>/gi, '');
+                                // Remove z-indexes above a certain value and position:fixed styles
+                                return html.replace(/z-index\s*:\s*\d{4,};?/gi, 'z-index:100;')
+                                .replace(/position\s*:\s*fixed;?/gi, 'position:absolute;');
+                        }
+
+                        function enforceStyleRestrictions(html) {
+                                return html
+                                .replace(/position\s*:\s*fixed/gi, 'position:absolute')
+                                .replace(/z-index\s*:\s*(\d+)/gi, (m, val) => {
+                                        return parseInt(val, 10) > 100 ? 'z-index:100' : m;
+                                });
+                        }
 			
 			function sanitizeStyleText(styleStr) {
 				const tmp = document.createElement('div');
@@ -575,9 +594,10 @@
 					// AGENT: Improve code
 					statusBar.textContent = `Iter ${iteration}/${maxIterations}: Improving...`;
 					updateStepper(6, iteration, maxIterations);
-					code = await callAgent(apiKey, "Improve", code, plan);
-					log("Improve", "Improved.");
-					editor.value = code; updatePreview(code);
+                                        code = await callAgent(apiKey, "Improve", code, plan);
+                                        code = enforceStyleRestrictions(code);
+                                        log("Improve", "Improved.");
+                                        editor.value = code; updatePreview(code);
 					
 					await sleep(agentDelay);
 				}
@@ -617,8 +637,8 @@
 					Only output full HTML, no explanations.`;
 					case "Debug":
 					return `Review this HTML/CSS/JS code:\n${input1}\nDetected runtime errors:\n${input2||"None"}\nFix all issues. Output only corrected code.`;
-					case "Improve":
-					return `UI plan:\n${input2}\n\nOptimize this HTML/CSS/JS for readability, speed, accessibility, and responsiveness:\n${input1}\nOutput only the improved HTML.`;
+                                        case "Improve":
+                                        return `UI plan:\n${input2}\n\nOptimize this HTML/CSS/JS for readability, speed, accessibility, and responsiveness. Do not introduce \`position:fixed\` or \`z-index\` above 100:\n${input1}\nOutput only the improved HTML.`;
 					case "Finalize":
 					return `UI plan:\n${input2}\n\nClean up and finalize this HTML code for production with best practices and comments:\n${input1}\nOutput only the final code.`;
 					default: return input1||"";
